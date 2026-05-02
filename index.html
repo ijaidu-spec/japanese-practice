@@ -55,6 +55,98 @@
     display: none; white-space: nowrap;
   }
   #infinity { font-size: 18px; color: #aaa; }
+  #stats-btn {
+    background: none; border: none; font-size: 18px;
+    cursor: pointer; padding: 2px 4px; border-radius: 8px;
+    transition: background 0.15s; flex-shrink: 0;
+  }
+  #stats-btn:active { background: #f0ede6; }
+  #level-btn {
+    background: #fef3c7; border: none; border-radius: 99px;
+    padding: 4px 10px; font-size: 13px; font-weight: 500;
+    color: #92400e; cursor: pointer; flex-shrink: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: background 0.15s;
+  }
+  #level-btn:active { background: #fde68a; }
+
+  /* card category badge top-right */
+  #card-category {
+    position: absolute; top: 10px; right: 12px;
+    font-size: 11px; color: #aaa;
+    background: #f5f3ee; border-radius: 99px;
+    padding: 2px 8px;
+  }
+
+  /* level panel */
+  #level-panel {
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px; height: 100dvh;
+    background: #fafaf8; z-index: 20;
+    display: none; flex-direction: column; overflow-y: auto;
+  }
+  #level-panel.open { display: flex; }
+  #level-close {
+    background: none; border: none; font-size: 18px;
+    color: #888; cursor: pointer; padding: 4px 8px;
+  }
+  #level-list { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .level-card {
+    background: #fff; border-radius: 16px;
+    border: 1px solid #f0ede6; padding: 16px;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  }
+  .level-card:active { background: #fafaf8; }
+  .level-card.active-level { border-color: #f59e0b; background: #fffbeb; }
+  .level-card.locked { opacity: 0.4; cursor: default; }
+  .level-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .level-name { font-size: 15px; font-weight: 500; }
+  .level-badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 99px;
+    background: #dcfce7; color: #15803d;
+  }
+  .level-badge.locked-badge { background: #f0ede6; color: #aaa; }
+  .level-badge.active-badge { background: #fef3c7; color: #92400e; }
+  .level-progress-wrap { height: 6px; background: #f0ede6; border-radius: 99px; overflow: hidden; margin-bottom: 4px; }
+  .level-progress-bar { height: 100%; background: #f59e0b; border-radius: 99px; transition: width 0.4s; }
+  .level-meta { font-size: 12px; color: #aaa; }
+
+  /* stats panel */
+  #stats-panel {
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px; height: 100dvh;
+    background: #fafaf8; z-index: 20;
+    display: none; flex-direction: column; overflow-y: auto;
+  }
+  #stats-panel.open { display: flex; }
+  #stats-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 16px 12px;
+    background: #fff; border-bottom: 1px solid #f0ede6; flex-shrink: 0;
+  }
+  #stats-title { font-size: 17px; font-weight: 500; }
+  #stats-close {
+    background: none; border: none; font-size: 18px;
+    color: #888; cursor: pointer; padding: 4px 8px;
+  }
+  #stats-today {
+    margin: 16px 16px 0; background: #fff; border-radius: 16px;
+    border: 1px solid #f0ede6; padding: 20px; text-align: center;
+  }
+  .stats-big-label { font-size: 13px; color: #888; margin-bottom: 8px; }
+  .stats-big-num { font-size: 36px; font-weight: 500; color: #1a1a1a; }
+  .stats-big-sub { font-size: 13px; color: #888; margin-top: 4px; }
+  #stats-list { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .stats-row {
+    background: #fff; border-radius: 12px; border: 1px solid #f0ede6;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .stats-date { font-size: 14px; color: #555; }
+  .stats-right { display: flex; gap: 12px; align-items: center; }
+  .stats-correct { font-size: 15px; font-weight: 500; color: #15803d; }
+  .stats-total { font-size: 13px; color: #aaa; }
+  .stats-bar-wrap { width: 60px; height: 6px; background: #f0ede6; border-radius: 99px; overflow: hidden; }
+  .stats-bar { height: 100%; background: #22c55e; border-radius: 99px; }
 
   /* scroll area */
   #scroll-area {
@@ -216,10 +308,34 @@
 </head>
 <body>
 
+<!-- 레벨 선택 패널 -->
+<div id="level-panel">
+  <div id="stats-header">
+    <span id="stats-title">레벨 선택</span>
+    <button id="level-close" onclick="toggleLevel()">✕</button>
+  </div>
+  <div id="level-list"></div>
+</div>
+
 <div id="topbar">
+  <button id="level-btn" onclick="toggleLevel()">🎯 <span id="level-label">Lv.1</span></button>
   <div id="progress-wrap"><div id="progress-bar"></div></div>
   <div id="combo-badge">콤보 x<span id="combo-num">0</span></div>
-  <div id="infinity">∞</div>
+  <button id="stats-btn" onclick="toggleStats()">📊</button>
+</div>
+
+<!-- 학습 기록 패널 -->
+<div id="stats-panel">
+  <div id="stats-header">
+    <span id="stats-title">학습 기록</span>
+    <button id="stats-close" onclick="toggleStats()">✕</button>
+  </div>
+  <div id="stats-today">
+    <div class="stats-big-label">오늘 학습</div>
+    <div class="stats-big-num"><span id="today-correct">0</span>개 정답</div>
+    <div class="stats-big-sub"><span id="today-total">0</span>문제 풀이</div>
+  </div>
+  <div id="stats-list"></div>
 </div>
 
 <div id="scroll-area">
@@ -242,6 +358,7 @@
       <div class="shadow-card"></div>
       <div class="shadow-card"></div>
       <div id="main-card">
+        <div id="card-category"></div>
         <div id="word-main">?</div>
         <div id="word-sub"></div>
         <div id="word-romaji"></div>
@@ -263,52 +380,81 @@
 </div>
 
 <script>
-const WORDS = [
-  {kanji:'花',reading:'はな',romaji:'hana',meaning:'꽃',category:'자연'},
-  {kanji:'犬',reading:'いぬ',romaji:'inu',meaning:'개',category:'동물'},
-  {kanji:'猫',reading:'ねこ',romaji:'neko',meaning:'고양이',category:'동물'},
-  {kanji:'水',reading:'みず',romaji:'mizu',meaning:'물',category:'자연'},
-  {kanji:'火',reading:'ひ',romaji:'hi',meaning:'불',category:'자연'},
-  {kanji:'山',reading:'やま',romaji:'yama',meaning:'산',category:'자연'},
-  {kanji:'川',reading:'かわ',romaji:'kawa',meaning:'강',category:'자연'},
-  {kanji:'空',reading:'そら',romaji:'sora',meaning:'하늘',category:'자연'},
-  {kanji:'月',reading:'つき',romaji:'tsuki',meaning:'달',category:'자연'},
-  {kanji:'星',reading:'ほし',romaji:'hoshi',meaning:'별',category:'자연'},
-  {kanji:'魚',reading:'さかな',romaji:'sakana',meaning:'물고기',category:'동물'},
-  {kanji:'鳥',reading:'とり',romaji:'tori',meaning:'새',category:'동물'},
-  {kanji:'木',reading:'き',romaji:'ki',meaning:'나무',category:'자연'},
-  {kanji:'石',reading:'いし',romaji:'ishi',meaning:'돌',category:'자연'},
-  {kanji:'風',reading:'かぜ',romaji:'kaze',meaning:'바람',category:'자연'},
-  {kanji:'雨',reading:'あめ',romaji:'ame',meaning:'비',category:'자연'},
-  {kanji:'雪',reading:'ゆき',romaji:'yuki',meaning:'눈(snow)',category:'자연'},
-  {kanji:'海',reading:'うみ',romaji:'umi',meaning:'바다',category:'자연'},
-  {kanji:'人',reading:'ひと',romaji:'hito',meaning:'사람',category:'사람'},
-  {kanji:'子',reading:'こ',romaji:'ko',meaning:'아이',category:'사람'},
-  {kanji:'手',reading:'て',romaji:'te',meaning:'손',category:'신체'},
-  {kanji:'目',reading:'め',romaji:'me',meaning:'눈(eye)',category:'신체'},
-  {kanji:'耳',reading:'みみ',romaji:'mimi',meaning:'귀',category:'신체'},
-  {kanji:'口',reading:'くち',romaji:'kuchi',meaning:'입',category:'신체'},
-  {kanji:'足',reading:'あし',romaji:'ashi',meaning:'발/다리',category:'신체'},
-  {kanji:'頭',reading:'あたま',romaji:'atama',meaning:'머리',category:'신체'},
-  {kanji:'心',reading:'こころ',romaji:'kokoro',meaning:'마음',category:'감정'},
-  {kanji:'夢',reading:'ゆめ',romaji:'yume',meaning:'꿈',category:'감정'},
-  {kanji:'愛',reading:'あい',romaji:'ai',meaning:'사랑',category:'감정'},
-  {kanji:'家',reading:'いえ',romaji:'ie',meaning:'집',category:'장소'},
-  {kanji:'学校',reading:'がっこう',romaji:'gakkou',meaning:'학교',category:'장소'},
-  {kanji:'駅',reading:'えき',romaji:'eki',meaning:'역',category:'장소'},
-  {kanji:'本',reading:'ほん',romaji:'hon',meaning:'책',category:'물건'},
-  {kanji:'車',reading:'くるま',romaji:'kuruma',meaning:'자동차',category:'탈것'},
-  {kanji:'電車',reading:'でんしゃ',romaji:'densha',meaning:'전철',category:'탈것'},
-  {kanji:'カーペット',reading:'かーぺっと',romaji:'kaapetto',meaning:'카펫',category:'물건'},
-  {kanji:'テレビ',reading:'てれび',romaji:'terebi',meaning:'텔레비전',category:'물건'},
-  {kanji:'電話',reading:'でんわ',romaji:'denwa',meaning:'전화',category:'물건'},
-  {kanji:'食べ物',reading:'たべもの',romaji:'tabemono',meaning:'음식',category:'음식'},
-  {kanji:'友達',reading:'ともだち',romaji:'tomodachi',meaning:'친구',category:'사람'},
+const LEVELS = [
+  { name:'Level 1', words:[
+    {kanji:'花',reading:'はな',romaji:'hana',meaning:'꽃',category:'자연'},
+    {kanji:'犬',reading:'いぬ',romaji:'inu',meaning:'개',category:'동물'},
+    {kanji:'猫',reading:'ねこ',romaji:'neko',meaning:'고양이',category:'동물'},
+    {kanji:'水',reading:'みず',romaji:'mizu',meaning:'물',category:'자연'},
+    {kanji:'火',reading:'ひ',romaji:'hi',meaning:'불',category:'자연'},
+    {kanji:'山',reading:'やま',romaji:'yama',meaning:'산',category:'자연'},
+    {kanji:'川',reading:'かわ',romaji:'kawa',meaning:'강',category:'자연'},
+    {kanji:'空',reading:'そら',romaji:'sora',meaning:'하늘',category:'자연'},
+    {kanji:'月',reading:'つき',romaji:'tsuki',meaning:'달',category:'자연'},
+    {kanji:'星',reading:'ほし',romaji:'hoshi',meaning:'별',category:'자연'},
+  ]},
+  { name:'Level 2', words:[
+    {kanji:'魚',reading:'さかな',romaji:'sakana',meaning:'물고기',category:'동물'},
+    {kanji:'鳥',reading:'とり',romaji:'tori',meaning:'새',category:'동물'},
+    {kanji:'木',reading:'き',romaji:'ki',meaning:'나무',category:'자연'},
+    {kanji:'石',reading:'いし',romaji:'ishi',meaning:'돌',category:'자연'},
+    {kanji:'風',reading:'かぜ',romaji:'kaze',meaning:'바람',category:'자연'},
+    {kanji:'雨',reading:'あめ',romaji:'ame',meaning:'비',category:'자연'},
+    {kanji:'雪',reading:'ゆき',romaji:'yuki',meaning:'눈(snow)',category:'자연'},
+    {kanji:'海',reading:'うみ',romaji:'umi',meaning:'바다',category:'자연'},
+    {kanji:'人',reading:'ひと',romaji:'hito',meaning:'사람',category:'사람'},
+    {kanji:'子',reading:'こ',romaji:'ko',meaning:'아이',category:'사람'},
+  ]},
+  { name:'Level 3', words:[
+    {kanji:'手',reading:'て',romaji:'te',meaning:'손',category:'신체'},
+    {kanji:'目',reading:'め',romaji:'me',meaning:'눈(eye)',category:'신체'},
+    {kanji:'耳',reading:'みみ',romaji:'mimi',meaning:'귀',category:'신체'},
+    {kanji:'口',reading:'くち',romaji:'kuchi',meaning:'입',category:'신체'},
+    {kanji:'足',reading:'あし',romaji:'ashi',meaning:'발/다리',category:'신체'},
+    {kanji:'頭',reading:'あたま',romaji:'atama',meaning:'머리',category:'신체'},
+    {kanji:'心',reading:'こころ',romaji:'kokoro',meaning:'마음',category:'감정'},
+    {kanji:'夢',reading:'ゆめ',romaji:'yume',meaning:'꿈',category:'감정'},
+    {kanji:'愛',reading:'あい',romaji:'ai',meaning:'사랑',category:'감정'},
+    {kanji:'家',reading:'いえ',romaji:'ie',meaning:'집',category:'장소'},
+  ]},
+  { name:'Level 4', words:[
+    {kanji:'学校',reading:'がっこう',romaji:'gakkou',meaning:'학교',category:'장소'},
+    {kanji:'駅',reading:'えき',romaji:'eki',meaning:'역',category:'장소'},
+    {kanji:'本',reading:'ほん',romaji:'hon',meaning:'책',category:'물건'},
+    {kanji:'車',reading:'くるま',romaji:'kuruma',meaning:'자동차',category:'탈것'},
+    {kanji:'電車',reading:'でんしゃ',romaji:'densha',meaning:'전철',category:'탈것'},
+    {kanji:'カーペット',reading:'かーぺっと',romaji:'kaapetto',meaning:'카펫',category:'물건'},
+    {kanji:'テレビ',reading:'てれび',romaji:'terebi',meaning:'텔레비전',category:'물건'},
+    {kanji:'電話',reading:'でんわ',romaji:'denwa',meaning:'전화',category:'물건'},
+    {kanji:'食べ物',reading:'たべもの',romaji:'tabemono',meaning:'음식',category:'음식'},
+    {kanji:'友達',reading:'ともだち',romaji:'tomodachi',meaning:'친구',category:'사람'},
+  ]},
 ];
+
+const PASS_RATE = 0.8;
+const PASS_MIN  = 10;
+
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem('jp_progress') || '{}'); }
+  catch(e) { return {}; }
+}
+function saveProgress(p) { localStorage.setItem('jp_progress', JSON.stringify(p)); }
+
+function getUnlockedLevel() {
+  const p = loadProgress();
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (p['level_' + i] && p['level_' + i].passed) return Math.min(i + 1, LEVELS.length - 1);
+  }
+  return 0;
+}
+
+let currentLevel = 0;
+let WORDS = LEVELS[0].words;
 
 let currentWord, currentChoices, answered=false;
 let combo=0, correctCount=0, wrongCount=0, streakCount=0;
 let mode='hira2meaning', usedWords=[], totalShown=0;
+let levelCorrect=0, levelTotal=0;
 const AZURE_TTS_KEY = '8RGgLixORTXotPKIAxlKk1uWfLJpwoC97nfJpL1Ra2V56f9oscBIJQQJ99CEACNns7RXJ3w3AAAYACOGJUFu';
 const AZURE_REGION = 'koreacentral';
 
@@ -346,6 +492,148 @@ async function speakWord(text) {
   } catch(e) {
     console.error('TTS error:', e);
   }
+}
+
+function getToday() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem('jp_stats') || '{}'); }
+  catch(e) { return {}; }
+}
+
+function saveStats(stats) {
+  localStorage.setItem('jp_stats', JSON.stringify(stats));
+}
+
+function recordAnswer(isCorrect) {
+  const stats = loadStats();
+  const today = getToday();
+  if (!stats[today]) stats[today] = {correct:0, total:0};
+  stats[today].total++;
+  if (isCorrect) stats[today].correct++;
+  saveStats(stats);
+}
+
+function selectLevel(idx) {
+  const unlockedUpTo = getUnlockedLevel();
+  if (idx > unlockedUpTo) return;
+  currentLevel = idx;
+  WORDS = LEVELS[idx].words;
+  usedWords = []; totalShown = 0;
+  levelCorrect = 0; levelTotal = 0;
+  correctCount = 0; wrongCount = 0; streakCount = 0; combo = 0;
+  updateCombo(); updateScore();
+  document.getElementById('level-label').textContent = 'Lv.' + (idx+1);
+  toggleLevel();
+  loadQuestion();
+}
+
+function toggleLevel() {
+  const panel = document.getElementById('level-panel');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+  } else {
+    renderLevelPanel();
+    panel.classList.add('open');
+  }
+}
+
+function renderLevelPanel() {
+  const p = loadProgress();
+  const unlockedUpTo = getUnlockedLevel();
+  const list = document.getElementById('level-list');
+  list.innerHTML = LEVELS.map((lv, i) => {
+    const key = 'level_' + i;
+    const data = p[key] || {correct:0, total:0, passed:false};
+    const locked = i > unlockedUpTo;
+    const isActive = i === currentLevel;
+    const pct = data.total > 0 ? Math.round(data.correct/data.total*100) : 0;
+    let badgeText = locked ? '🔒 잠금' : data.passed ? '✅ 통과' : isActive ? '진행중' : '도전';
+    let badgeClass = locked ? 'locked-badge' : data.passed ? '' : isActive ? 'active-badge' : '';
+    return `<div class="level-card ${locked?'locked':''} ${isActive?'active-level':''}" onclick="${locked?'':'selectLevel('+i+')'}">
+      <div class="level-card-top">
+        <div class="level-name">${lv.name} <span style="font-size:13px;color:#aaa;font-weight:400">(${lv.words.length}단어)</span></div>
+        <div class="level-badge ${badgeClass}">${badgeText}</div>
+      </div>
+      <div class="level-progress-wrap">
+        <div class="level-progress-bar" style="width:${data.passed?100:pct}%"></div>
+      </div>
+      <div class="level-meta">${data.passed ? '정답률 ' + pct + '%로 통과!' : data.total > 0 ? '정답률 ' + pct + '%  (' + data.correct + '/' + data.total + ')' : '아직 시작 전'}</div>
+    </div>`;
+  }).join('');
+}
+
+function checkLevelPass() {
+  if (levelTotal < PASS_MIN) return;
+  const rate = levelCorrect / levelTotal;
+  if (rate >= PASS_RATE) {
+    const p = loadProgress();
+    const key = 'level_' + currentLevel;
+    if (!p[key]) p[key] = {};
+    if (!p[key].passed) {
+      p[key].passed = true;
+      p[key].correct = levelCorrect;
+      p[key].total = levelTotal;
+      saveProgress(p);
+      if (currentLevel < LEVELS.length - 1) {
+        setTimeout(() => {
+          if (confirm(`🎉 Level ${currentLevel+1} 통과!\n정답률 ${Math.round(rate*100)}%\n\nLevel ${currentLevel+2}가 열렸어요! 이동할까요?`)) {
+            selectLevel(currentLevel + 1);
+          }
+        }, 500);
+      } else {
+        setTimeout(() => alert('🏆 모든 레벨 완료! 정말 대단해요!'), 500);
+      }
+    }
+  }
+}
+
+function toggleStats() {
+  const panel = document.getElementById('stats-panel');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+  } else {
+    renderStats();
+    panel.classList.add('open');
+  }
+}
+
+function renderStats() {
+  const stats = loadStats();
+  const today = getToday();
+  const todayData = stats[today] || {correct:0, total:0};
+  document.getElementById('today-correct').textContent = todayData.correct;
+  document.getElementById('today-total').textContent = todayData.total;
+
+  const list = document.getElementById('stats-list');
+  const days = Object.keys(stats).sort((a,b)=>b.localeCompare(a));
+
+  if (days.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#aaa;font-size:14px;padding:20px">아직 기록이 없어요</div>';
+    return;
+  }
+
+  list.innerHTML = days.map(day => {
+    const d = stats[day];
+    const pct = d.total > 0 ? Math.round(d.correct/d.total*100) : 0;
+    const dateLabel = day === today ? '오늘' : day.slice(5).replace('-', '/');
+    return `<div class="stats-row">
+      <div class="stats-date">${dateLabel}</div>
+      <div class="stats-right">
+        <div class="stats-bar-wrap"><div class="stats-bar" style="width:${pct}%"></div></div>
+        <div class="stats-correct">${d.correct}정답</div>
+        <div class="stats-total">${d.total}문제</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+  mode = m;
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  updateInstruction();
+  loadQuestion();
 }
 
 function setMode(m, el) {
@@ -392,7 +680,7 @@ function loadQuestion() {
 
 function renderCard() {
   const mainEl = document.getElementById('word-main');
-  const hintEl = document.getElementById('word-hint');
+  const catEl  = document.getElementById('card-category');
   const romajiEl = document.getElementById('word-romaji');
   mainEl.style.fontFamily = "'Noto Sans JP', sans-serif";
   romajiEl.style.display = 'none';
@@ -400,16 +688,16 @@ function renderCard() {
   if (mode==='hira2meaning') {
     mainEl.textContent = currentWord.reading;
     mainEl.style.fontSize = currentWord.reading.length>5?'34px':'46px';
-    hintEl.textContent = currentWord.category;
+    catEl.textContent = currentWord.category;
   } else if (mode==='meaning2hira') {
     mainEl.textContent = currentWord.meaning;
     mainEl.style.fontSize = '34px';
     mainEl.style.fontFamily = "'Noto Sans KR', sans-serif";
-    hintEl.textContent = '→ 히라가나';
+    catEl.textContent = '→ 히라가나';
   } else {
     mainEl.textContent = currentWord.kanji;
     mainEl.style.fontSize = currentWord.kanji.length>2?'36px':'52px';
-    hintEl.textContent = currentWord.category;
+    catEl.textContent = currentWord.category;
   }
 }
 
@@ -443,6 +731,9 @@ function handleAnswer(chosen, btn) {
 
   if (isCorrect) {
     combo++; streakCount++; correctCount++;
+    levelCorrect++; levelTotal++;
+    recordAnswer(true);
+    checkLevelPass();
     card.classList.add('correct');
     rb.className='show correct-bar';
     document.getElementById('result-label').textContent = combo>=5?`콤보 x${combo}! 완벽해요!`:'완벽해요!';
@@ -452,6 +743,8 @@ function handleAnswer(chosen, btn) {
     sb.className='visible'; sb.textContent='🔊 다시 듣기';
   } else {
     combo=0; streakCount=0; wrongCount++;
+    levelTotal++;
+    recordAnswer(false);
     card.classList.add('wrong');
     rb.className='show wrong-bar';
     document.getElementById('result-label').textContent='틀렸어요';
@@ -493,6 +786,9 @@ function updateScore() {
   document.getElementById('streak-count').textContent=streakCount;
 }
 
+currentLevel = getUnlockedLevel();
+WORDS = LEVELS[currentLevel].words;
+document.getElementById("level-label").textContent = "Lv." + (currentLevel+1);
 loadQuestion();
 </script>
 </body>
