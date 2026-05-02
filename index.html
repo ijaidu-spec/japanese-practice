@@ -1,38 +1,734 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="일본어 연습">
+<meta name="theme-color" content="#f59e0b">
+<title>일본어 히라가나 연습</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #fafaf8; color: #1a1a1a;
+    display: flex; flex-direction: column; align-items: center;
+    max-width: 480px; margin: 0 auto; height: 100dvh;
+  }
+
+  /* topbar */
+  #topbar {
+    width: 100%; background: #fff;
+    padding: 10px 12px 8px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #f0ede6; flex-shrink: 0;
+  }
+  #level-btn {
+    background: #fef3c7; border: none; border-radius: 99px;
+    padding: 5px 10px; font-size: 13px; font-weight: 500;
+    color: #92400e; cursor: pointer; flex-shrink: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  #level-btn:active { background: #fde68a; }
+  #progress-wrap {
+    flex: 1; height: 10px; background: #f0ede6;
+    border-radius: 99px; overflow: hidden;
+  }
+  #progress-bar {
+    height: 100%; background: linear-gradient(90deg,#fbbf24,#f59e0b);
+    border-radius: 99px; transition: width 0.5s cubic-bezier(.4,0,.2,1); width: 0%;
+  }
+  #combo-badge {
+    font-size: 12px; font-weight: 500; color: #92400e; background: #fef3c7;
+    border-radius: 99px; padding: 3px 10px; display: none; white-space: nowrap;
+  }
+  #stats-btn {
+    background: none; border: none; font-size: 20px;
+    cursor: pointer; padding: 2px; flex-shrink: 0;
+  }
+
+  /* scroll */
+  #scroll-area { flex: 1; overflow-y: auto; width: 100%; padding: 0 0 120px; -webkit-overflow-scrolling: touch; }
+  #inner { padding: 14px 16px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+  /* score */
+  #score-display { display: flex; gap: 16px; align-self: flex-start; }
+  .score-item { font-size: 13px; color: #888; }
+  .score-item span { font-weight: 500; color: #1a1a1a; }
+
+  /* mode tabs */
+  #mode-tabs { display: flex; width: 100%; background: #f0ede6; border-radius: 12px; padding: 3px; gap: 3px; }
+  .mode-tab {
+    flex: 1; padding: 8px 4px; border-radius: 9px; border: none;
+    background: transparent; font-size: 12px; color: #888; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif; transition: background 0.2s, color 0.2s;
+  }
+  .mode-tab.active { background: #fff; color: #1a1a1a; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* instruction */
+  #instruction { font-size: 17px; font-weight: 500; color: #1a1a1a; align-self: flex-start; }
+
+  /* card */
+  #card-area { width: 100%; position: relative; height: 220px; }
+  .shadow-card { position: absolute; width: 100%; height: 200px; background: #e8e5de; border-radius: 20px; }
+  .shadow-card:nth-child(1) { top: 8px; opacity: 0.5; transform: scale(0.97); }
+  .shadow-card:nth-child(2) { top: 4px; opacity: 0.7; transform: scale(0.985); }
+  #main-card {
+    position: absolute; top: 0; left: 0; width: 100%; height: 200px;
+    background: #fff; border-radius: 20px; border: 1px solid #f0ede6;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1), background 0.3s, border-color 0.3s;
+  }
+  #main-card.correct { background: #f0fdf4; border-color: #86efac; }
+  #main-card.wrong   { background: #fef2f2; border-color: #fca5a5; }
+  #main-card.fly-left { transform: translateX(-130%) rotate(-12deg); opacity: 0; }
+  #card-category {
+    position: absolute; top: 10px; right: 12px;
+    font-size: 11px; color: #aaa; background: #f5f3ee;
+    border-radius: 99px; padding: 2px 8px;
+  }
+  #word-main {
+    font-size: 52px; font-weight: 400; color: #1a1a1a;
+    font-family: 'Noto Sans JP', sans-serif;
+    line-height: 1.1; text-align: center; padding: 0 12px;
+  }
+  #word-sub { font-size: 14px; color: #888; font-family: 'Noto Sans JP', sans-serif; display: none; }
+  #word-romaji { font-size: 13px; color: #aaa; letter-spacing: 0.04em; display: none; }
+  #speak-btn {
+    margin-top: 4px; background: none; border: 1.5px solid #d1fae5;
+    border-radius: 99px; padding: 5px 14px;
+    font-size: 13px; color: #15803d; cursor: pointer;
+    display: none; align-items: center; gap: 6px;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  #speak-btn.visible { display: flex; }
+  #speak-btn.wrong-speak { border-color: #fecaca; color: #b91c1c; }
+
+  /* choices */
+  #choices { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .choice-btn {
+    width: 100%; padding: 15px 16px; background: #fff;
+    border: 1px solid #f0ede6; border-radius: 14px;
+    font-size: 16px; color: #1a1a1a; cursor: pointer; text-align: center;
+    font-family: 'Noto Sans JP', sans-serif;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  }
+  .choice-btn:active:not(:disabled) { transform: scale(0.97); }
+  .choice-btn.correct-ans { background: #dcfce7; border-color: #4ade80; color: #15803d; }
+  .choice-btn.wrong-ans   { background: #fee2e2; border-color: #f87171; color: #b91c1c; }
+  .choice-btn:disabled { cursor: default; }
+
+  /* result bar */
+  #result-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    display: none; flex-direction: column; gap: 10px; z-index: 10;
+  }
+  #result-bar.show { display: flex; }
+  #result-bar.correct-bar { background: #f0fdf4; border-top: 2px solid #4ade80; }
+  #result-bar.wrong-bar   { background: #fef2f2; border-top: 2px solid #f87171; }
+  #result-label { font-size: 16px; font-weight: 500; }
+  #result-bar.correct-bar #result-label { color: #15803d; }
+  #result-bar.wrong-bar   #result-label { color: #b91c1c; }
+  #result-meaning { font-size: 13px; color: #555; font-family: 'Noto Sans JP', sans-serif; }
+  #continue-btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none;
+    font-size: 16px; font-weight: 500; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif; transition: transform 0.1s;
+  }
+  #continue-btn:active { transform: scale(0.97); }
+  #result-bar.correct-bar #continue-btn { background: #22c55e; color: #fff; }
+  #result-bar.wrong-bar   #continue-btn { background: #ef4444; color: #fff; }
+
+  /* full screen panels */
+  .fs-panel {
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px; height: 100dvh;
+    background: #fafaf8; z-index: 20;
+    display: none; flex-direction: column; overflow-y: auto;
+  }
+  .fs-panel.open { display: flex; }
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px; background: #fff; border-bottom: 1px solid #f0ede6; flex-shrink: 0;
+  }
+  .panel-title { font-size: 17px; font-weight: 500; }
+  .panel-close { background: none; border: none; font-size: 20px; color: #888; cursor: pointer; padding: 4px 8px; }
+
+  /* level panel */
+  #level-list { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .level-card {
+    background: #fff; border-radius: 16px; border: 1px solid #f0ede6;
+    padding: 16px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .level-card.active-level { border-color: #f59e0b; background: #fffbeb; }
+  .level-card.locked { opacity: 0.4; cursor: default; }
+  .level-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .level-name { font-size: 15px; font-weight: 500; }
+  .lv-badge { font-size: 11px; padding: 3px 8px; border-radius: 99px; background: #dcfce7; color: #15803d; }
+  .lv-badge.locked-b { background: #f0ede6; color: #aaa; }
+  .lv-badge.active-b { background: #fef3c7; color: #92400e; }
+  .lv-badge.todo-b   { background: #e0f2fe; color: #0369a1; }
+  .lv-prog-wrap { height: 6px; background: #f0ede6; border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+  .lv-prog-bar  { height: 100%; background: #f59e0b; border-radius: 99px; transition: width 0.4s; }
+  .lv-meta { font-size: 12px; color: #aaa; }
+
+  /* stats panel */
+  #stats-today {
+    margin: 16px; background: #fff; border-radius: 16px;
+    border: 1px solid #f0ede6; padding: 20px; text-align: center;
+  }
+  .stats-big-label { font-size: 13px; color: #888; margin-bottom: 8px; }
+  .stats-big-num { font-size: 36px; font-weight: 500; }
+  .stats-big-sub { font-size: 13px; color: #888; margin-top: 4px; }
+  #stats-list { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .stats-row {
+    background: #fff; border-radius: 12px; border: 1px solid #f0ede6;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .stats-date { font-size: 14px; color: #555; }
+  .stats-right { display: flex; gap: 10px; align-items: center; }
+  .stats-correct { font-size: 15px; font-weight: 500; color: #15803d; }
+  .stats-total { font-size: 13px; color: #aaa; }
+  .stats-bar-wrap { width: 50px; height: 6px; background: #f0ede6; border-radius: 99px; overflow: hidden; }
+  .stats-bar-fill { height: 100%; background: #22c55e; border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<!-- 레벨 패널 -->
+<div id="level-panel" class="fs-panel">
+  <div class="panel-header">
+    <span class="panel-title">레벨 선택</span>
+    <button class="panel-close" onclick="toggleLevel()">✕</button>
+  </div>
+  <div id="level-list"></div>
+</div>
+
+<!-- 통계 패널 -->
+<div id="stats-panel" class="fs-panel">
+  <div class="panel-header">
+    <span class="panel-title">학습 기록</span>
+    <button class="panel-close" onclick="toggleStats()">✕</button>
+  </div>
+  <div id="stats-today">
+    <div class="stats-big-label">오늘 학습</div>
+    <div class="stats-big-num"><span id="today-correct">0</span>개 정답</div>
+    <div class="stats-big-sub"><span id="today-total">0</span>문제 풀이</div>
+  </div>
+  <div id="stats-list"></div>
+</div>
+
+<!-- 탑바 -->
+<div id="topbar">
+  <button id="level-btn" onclick="toggleLevel()">🎯 <span id="level-label">Lv.1</span></button>
+  <div id="progress-wrap"><div id="progress-bar"></div></div>
+  <div id="combo-badge">콤보 x<span id="combo-num">0</span></div>
+  <button id="stats-btn" onclick="toggleStats()">📊</button>
+</div>
+
+<!-- 메인 -->
+<div id="scroll-area">
+  <div id="inner">
+    <div id="score-display">
+      <div class="score-item">정답 <span id="correct-count">0</span></div>
+      <div class="score-item">오답 <span id="wrong-count">0</span></div>
+      <div class="score-item">연속 <span id="streak-count">0</span> 🔥</div>
+    </div>
+    <div id="mode-tabs">
+      <button class="mode-tab active" onclick="setMode('hira2meaning',this)">히라가나→뜻</button>
+      <button class="mode-tab" onclick="setMode('meaning2hira',this)">뜻→히라가나</button>
+      <button class="mode-tab" onclick="setMode('kanji2hira',this)">한자→히라가나</button>
+    </div>
+    <div id="instruction">히라가나의 뜻을 고르세요</div>
+    <div id="card-area">
+      <div class="shadow-card"></div>
+      <div class="shadow-card"></div>
+      <div id="main-card">
+        <div id="card-category"></div>
+        <div id="word-main">?</div>
+        <div id="word-sub"></div>
+        <div id="word-romaji"></div>
+        <button id="speak-btn" onclick="speakWord()">🔊 듣기</button>
+      </div>
+    </div>
+    <div id="choices"></div>
+  </div>
+</div>
+
+<!-- 결과 바 -->
+<div id="result-bar">
+  <div>
+    <div id="result-label">완벽해요!</div>
+    <div id="result-meaning"></div>
+  </div>
+  <button id="continue-btn" onclick="nextQuestion()">계속하기</button>
+</div>
+
 <script>
 const LEVELS = [
   { name:'Level 1', words:[
-    {kanji:'花',reading:'はな',romaji:'hana',meaning:'꽃',category:'자연'},
-    {kanji:'犬',reading:'いぬ',romaji:'inu',meaning:'개',category:'동물'},
-    {kanji:'猫',reading:'ねこ',romaji:'neko',meaning:'고양이',category:'동물'},
-    {kanji:'水',reading:'みず',romaji:'mizu',meaning:'물',category:'자연'},
-    {kanji:'火',reading:'ひ',romaji:'hi',meaning:'불',category:'자연'},
-    {kanji:'山',reading:'やま',romaji:'yama',meaning:'산',category:'자연'},
-    {kanji:'川',reading:'かわ',romaji:'kawa',meaning:'강',category:'자연'},
-    {kanji:'空',reading:'そら',romaji:'sora',meaning:'하늘',category:'자연'},
-    {kanji:'月',reading:'つき',romaji:'tsuki',meaning:'달',category:'자연'},
-    {kanji:'星',reading:'ほし',romaji:'hoshi',meaning:'별',category:'자연'},
+    {kanji:'花',    reading:'はな',    romaji:'hana',      meaning:'꽃',       category:'자연'},
+    {kanji:'山',    reading:'やま',    romaji:'yama',      meaning:'산',       category:'자연'},
+    {kanji:'川',    reading:'かわ',    romaji:'kawa',      meaning:'강',       category:'자연'},
+    {kanji:'海',    reading:'うみ',    romaji:'umi',       meaning:'바다',     category:'자연'},
+    {kanji:'空',    reading:'そら',    romaji:'sora',      meaning:'하늘',     category:'자연'},
+    {kanji:'水',    reading:'みず',    romaji:'mizu',      meaning:'물',       category:'자연'},
+    {kanji:'火',    reading:'ひ',      romaji:'hi',        meaning:'불',       category:'자연'},
+    {kanji:'木',    reading:'き',      romaji:'ki',        meaning:'나무',     category:'자연'},
+    {kanji:'月',    reading:'つき',    romaji:'tsuki',     meaning:'달',       category:'자연'},
+    {kanji:'星',    reading:'ほし',    romaji:'hoshi',     meaning:'별',       category:'자연'},
+    {kanji:'雨',    reading:'あめ',    romaji:'ame',       meaning:'비',       category:'자연'},
+    {kanji:'雪',    reading:'ゆき',    romaji:'yuki',      meaning:'눈',       category:'자연'},
+    {kanji:'風',    reading:'かぜ',    romaji:'kaze',      meaning:'바람',     category:'자연'},
+    {kanji:'石',    reading:'いし',    romaji:'ishi',      meaning:'돌',       category:'자연'},
+    {kanji:'土',    reading:'つち',    romaji:'tsuchi',    meaning:'흙',       category:'자연'},
+    {kanji:'犬',    reading:'いぬ',    romaji:'inu',       meaning:'개',       category:'동물'},
+    {kanji:'猫',    reading:'ねこ',    romaji:'neko',      meaning:'고양이',   category:'동물'},
+    {kanji:'魚',    reading:'さかな',  romaji:'sakana',    meaning:'물고기',   category:'동물'},
+    {kanji:'鳥',    reading:'とり',    romaji:'tori',      meaning:'새',       category:'동물'},
+    {kanji:'馬',    reading:'うま',    romaji:'uma',       meaning:'말',       category:'동물'},
   ]},
-  // ... (Level 2~4는 그대로 유지)
+  { name:'Level 2', words:[
+    {kanji:'手',    reading:'て',      romaji:'te',        meaning:'손',       category:'신체'},
+    {kanji:'目',    reading:'め',      romaji:'me',        meaning:'눈',       category:'신체'},
+    {kanji:'耳',    reading:'みみ',    romaji:'mimi',      meaning:'귀',       category:'신체'},
+    {kanji:'口',    reading:'くち',    romaji:'kuchi',     meaning:'입',       category:'신체'},
+    {kanji:'足',    reading:'あし',    romaji:'ashi',      meaning:'발/다리',  category:'신체'},
+    {kanji:'頭',    reading:'あたま',  romaji:'atama',     meaning:'머리',     category:'신체'},
+    {kanji:'顔',    reading:'かお',    romaji:'kao',       meaning:'얼굴',     category:'신체'},
+    {kanji:'体',    reading:'からだ',  romaji:'karada',    meaning:'몸',       category:'신체'},
+    {kanji:'髪',    reading:'かみ',    romaji:'kami',      meaning:'머리카락', category:'신체'},
+    {kanji:'歯',    reading:'は',      romaji:'ha',        meaning:'이(치아)', category:'신체'},
+    {kanji:'人',    reading:'ひと',    romaji:'hito',      meaning:'사람',     category:'사람'},
+    {kanji:'子',    reading:'こ',      romaji:'ko',        meaning:'아이',     category:'사람'},
+    {kanji:'男',    reading:'おとこ',  romaji:'otoko',     meaning:'남자',     category:'사람'},
+    {kanji:'女',    reading:'おんな',  romaji:'onna',      meaning:'여자',     category:'사람'},
+    {kanji:'父',    reading:'ちち',    romaji:'chichi',    meaning:'아버지',   category:'사람'},
+    {kanji:'母',    reading:'はは',    romaji:'haha',      meaning:'어머니',   category:'사람'},
+    {kanji:'兄',    reading:'あに',    romaji:'ani',       meaning:'형/오빠',  category:'사람'},
+    {kanji:'姉',    reading:'あね',    romaji:'ane',       meaning:'언니/누나',category:'사람'},
+    {kanji:'弟',    reading:'おとうと',romaji:'otouto',    meaning:'남동생',   category:'사람'},
+    {kanji:'妹',    reading:'いもうと',romaji:'imouto',    meaning:'여동생',   category:'사람'},
+  ]},
+  { name:'Level 3', words:[
+    {kanji:'家',    reading:'いえ',    romaji:'ie',        meaning:'집',       category:'장소'},
+    {kanji:'学校',  reading:'がっこう',romaji:'gakkou',    meaning:'학교',     category:'장소'},
+    {kanji:'駅',    reading:'えき',    romaji:'eki',       meaning:'역',       category:'장소'},
+    {kanji:'病院',  reading:'びょういん',romaji:'byouin',  meaning:'병원',     category:'장소'},
+    {kanji:'銀行',  reading:'ぎんこう',romaji:'ginkou',    meaning:'은행',     category:'장소'},
+    {kanji:'郵便局',reading:'ゆうびんきょく',romaji:'yuubinkyoku',meaning:'우체국',category:'장소'},
+    {kanji:'図書館',reading:'としょかん',romaji:'toshokan', meaning:'도서관',  category:'장소'},
+    {kanji:'公園',  reading:'こうえん',romaji:'kouen',     meaning:'공원',     category:'장소'},
+    {kanji:'店',    reading:'みせ',    romaji:'mise',      meaning:'가게',     category:'장소'},
+    {kanji:'会社',  reading:'かいしゃ',romaji:'kaisha',    meaning:'회사',     category:'장소'},
+    {kanji:'部屋',  reading:'へや',    romaji:'heya',      meaning:'방',       category:'장소'},
+    {kanji:'台所',  reading:'だいどころ',romaji:'daidokoro',meaning:'부엌',    category:'장소'},
+    {kanji:'玄関',  reading:'げんかん',romaji:'genkan',    meaning:'현관',     category:'장소'},
+    {kanji:'窓',    reading:'まど',    romaji:'mado',      meaning:'창문',     category:'물건'},
+    {kanji:'机',    reading:'つくえ',  romaji:'tsukue',    meaning:'책상',     category:'물건'},
+    {kanji:'椅子',  reading:'いす',    romaji:'isu',       meaning:'의자',     category:'물건'},
+    {kanji:'本',    reading:'ほん',    romaji:'hon',       meaning:'책',       category:'물건'},
+    {kanji:'紙',    reading:'かみ',    romaji:'kami',      meaning:'종이',     category:'물건'},
+    {kanji:'鉛筆',  reading:'えんぴつ',romaji:'enpitsu',   meaning:'연필',     category:'물건'},
+    {kanji:'時計',  reading:'とけい',  romaji:'tokei',     meaning:'시계',     category:'물건'},
+  ]},
   { name:'Level 4', words:[
-    {kanji:'学校',reading:'がっこう',romaji:'gakkou',meaning:'학교',category:'장소'},
-    {kanji:'駅',reading:'えき',romaji:'eki',meaning:'역',category:'장소'},
-    {kanji:'本',reading:'ほん',romaji:'hon',meaning:'책',category:'물건'},
-    {kanji:'車',reading:'くるま',romaji:'kuruma',meaning:'자동차',category:'탈것'},
-    {kanji:'電車',reading:'でんしゃ',romaji:'densha',meaning:'전철',category:'탈것'},
-    {kanji:'カーペット',reading:'かーぺっと',romaji:'kaapetto',meaning:'카펫',category:'물건'},
-    {kanji:'テレビ',reading:'てれび',romaji:'terebi',meaning:'텔레비전',category:'물건'},
-    {kanji:'電話',reading:'でんわ',romaji:'denwa',meaning:'전화',category:'물건'},
-    {kanji:'食べ物',reading:'たべもの',romaji:'tabemono',meaning:'음식',category:'음식'},
-    {kanji:'友達',reading:'ともだち',romaji:'tomodachi',meaning:'친구',category:'사람'},
+    {kanji:'電車',  reading:'でんしゃ',romaji:'densha',    meaning:'전철',     category:'탈것'},
+    {kanji:'車',    reading:'くるま',  romaji:'kuruma',    meaning:'자동차',   category:'탈것'},
+    {kanji:'バス',  reading:'ばす',    romaji:'basu',      meaning:'버스',     category:'탈것'},
+    {kanji:'飛行機',reading:'ひこうき',romaji:'hikouki',   meaning:'비행기',   category:'탈것'},
+    {kanji:'船',    reading:'ふね',    romaji:'fune',      meaning:'배',       category:'탈것'},
+    {kanji:'自転車',reading:'じてんしゃ',romaji:'jitensha', meaning:'자전거',  category:'탈것'},
+    {kanji:'道',    reading:'みち',    romaji:'michi',     meaning:'길',       category:'장소'},
+    {kanji:'橋',    reading:'はし',    romaji:'hashi',     meaning:'다리',     category:'장소'},
+    {kanji:'電話',  reading:'でんわ',  romaji:'denwa',     meaning:'전화',     category:'물건'},
+    {kanji:'テレビ',reading:'てれび',  romaji:'terebi',    meaning:'TV',       category:'물건'},
+    {kanji:'新聞',  reading:'しんぶん',romaji:'shinbun',   meaning:'신문',     category:'물건'},
+    {kanji:'写真',  reading:'しゃしん',romaji:'shashin',   meaning:'사진',     category:'물건'},
+    {kanji:'荷物',  reading:'にもつ',  romaji:'nimotsu',   meaning:'짐',       category:'물건'},
+    {kanji:'財布',  reading:'さいふ',  romaji:'saifu',     meaning:'지갑',     category:'물건'},
+    {kanji:'鍵',    reading:'かぎ',    romaji:'kagi',      meaning:'열쇠',     category:'물건'},
+    {kanji:'傘',    reading:'かさ',    romaji:'kasa',      meaning:'우산',     category:'물건'},
+    {kanji:'眼鏡',  reading:'めがね',  romaji:'megane',    meaning:'안경',     category:'물건'},
+    {kanji:'帽子',  reading:'ぼうし',  romaji:'boushi',    meaning:'모자',     category:'의류'},
+    {kanji:'服',    reading:'ふく',    romaji:'fuku',      meaning:'옷',       category:'의류'},
+    {kanji:'靴',    reading:'くつ',    romaji:'kutsu',     meaning:'신발',     category:'의류'},
+  ]},
+  { name:'Level 5', words:[
+    {kanji:'食べる',reading:'たべる',  romaji:'taberu',    meaning:'먹다',     category:'동사'},
+    {kanji:'飲む',  reading:'のむ',    romaji:'nomu',      meaning:'마시다',   category:'동사'},
+    {kanji:'見る',  reading:'みる',    romaji:'miru',      meaning:'보다',     category:'동사'},
+    {kanji:'聞く',  reading:'きく',    romaji:'kiku',      meaning:'듣다/묻다',category:'동사'},
+    {kanji:'話す',  reading:'はなす',  romaji:'hanasu',    meaning:'말하다',   category:'동사'},
+    {kanji:'読む',  reading:'よむ',    romaji:'yomu',      meaning:'읽다',     category:'동사'},
+    {kanji:'書く',  reading:'かく',    romaji:'kaku',      meaning:'쓰다',     category:'동사'},
+    {kanji:'行く',  reading:'いく',    romaji:'iku',       meaning:'가다',     category:'동사'},
+    {kanji:'来る',  reading:'くる',    romaji:'kuru',      meaning:'오다',     category:'동사'},
+    {kanji:'帰る',  reading:'かえる',  romaji:'kaeru',     meaning:'돌아가다', category:'동사'},
+    {kanji:'起きる',reading:'おきる',  romaji:'okiru',     meaning:'일어나다', category:'동사'},
+    {kanji:'寝る',  reading:'ねる',    romaji:'neru',      meaning:'자다',     category:'동사'},
+    {kanji:'買う',  reading:'かう',    romaji:'kau',       meaning:'사다',     category:'동사'},
+    {kanji:'売る',  reading:'うる',    romaji:'uru',       meaning:'팔다',     category:'동사'},
+    {kanji:'作る',  reading:'つくる',  romaji:'tsukuru',   meaning:'만들다',   category:'동사'},
+    {kanji:'開ける',reading:'あける',  romaji:'akeru',     meaning:'열다',     category:'동사'},
+    {kanji:'閉める',reading:'しめる',  romaji:'shimeru',   meaning:'닫다',     category:'동사'},
+    {kanji:'待つ',  reading:'まつ',    romaji:'matsu',     meaning:'기다리다', category:'동사'},
+    {kanji:'会う',  reading:'あう',    romaji:'au',        meaning:'만나다',   category:'동사'},
+    {kanji:'知る',  reading:'しる',    romaji:'shiru',     meaning:'알다',     category:'동사'},
+  ]},
+  { name:'Level 6', words:[
+    {kanji:'大きい',reading:'おおきい',romaji:'ookii',     meaning:'크다',     category:'형용사'},
+    {kanji:'小さい',reading:'ちいさい',romaji:'chiisai',   meaning:'작다',     category:'형용사'},
+    {kanji:'長い',  reading:'ながい',  romaji:'nagai',     meaning:'길다',     category:'형용사'},
+    {kanji:'短い',  reading:'みじかい',romaji:'mijikai',   meaning:'짧다',     category:'형용사'},
+    {kanji:'高い',  reading:'たかい',  romaji:'takai',     meaning:'높다/비싸다',category:'형용사'},
+    {kanji:'低い',  reading:'ひくい',  romaji:'hikui',     meaning:'낮다',     category:'형용사'},
+    {kanji:'新しい',reading:'あたらしい',romaji:'atarashii',meaning:'새롭다',  category:'형용사'},
+    {kanji:'古い',  reading:'ふるい',  romaji:'furui',     meaning:'오래되다', category:'형용사'},
+    {kanji:'良い',  reading:'よい',    romaji:'yoi',       meaning:'좋다',     category:'형용사'},
+    {kanji:'悪い',  reading:'わるい',  romaji:'warui',     meaning:'나쁘다',   category:'형용사'},
+    {kanji:'多い',  reading:'おおい',  romaji:'ooi',       meaning:'많다',     category:'형용사'},
+    {kanji:'少ない',reading:'すくない',romaji:'sukunai',   meaning:'적다',     category:'형용사'},
+    {kanji:'早い',  reading:'はやい',  romaji:'hayai',     meaning:'빠르다/이르다',category:'형용사'},
+    {kanji:'遅い',  reading:'おそい',  romaji:'osoi',      meaning:'늦다/느리다',category:'형용사'},
+    {kanji:'暑い',  reading:'あつい',  romaji:'atsui',     meaning:'덥다',     category:'형용사'},
+    {kanji:'寒い',  reading:'さむい',  romaji:'samui',     meaning:'춥다',     category:'형용사'},
+    {kanji:'熱い',  reading:'あつい',  romaji:'atsui',     meaning:'뜨겁다',   category:'형용사'},
+    {kanji:'冷たい',reading:'つめたい',romaji:'tsumetai',  meaning:'차갑다',   category:'형용사'},
+    {kanji:'難しい',reading:'むずかしい',romaji:'muzukashii',meaning:'어렵다', category:'형용사'},
+    {kanji:'易しい',reading:'やさしい',romaji:'yasashii',  meaning:'쉽다',     category:'형용사'},
+  ]},
+  { name:'Level 7', words:[
+    {kanji:'飯',    reading:'ごはん',  romaji:'gohan',     meaning:'밥/식사',  category:'음식'},
+    {kanji:'パン',  reading:'ぱん',    romaji:'pan',       meaning:'빵',       category:'음식'},
+    {kanji:'肉',    reading:'にく',    romaji:'niku',      meaning:'고기',     category:'음식'},
+    {kanji:'野菜',  reading:'やさい',  romaji:'yasai',     meaning:'채소',     category:'음식'},
+    {kanji:'果物',  reading:'くだもの',romaji:'kudamono',  meaning:'과일',     category:'음식'},
+    {kanji:'卵',    reading:'たまご',  romaji:'tamago',    meaning:'달걀',     category:'음식'},
+    {kanji:'牛乳',  reading:'ぎゅうにゅう',romaji:'gyuunyuu',meaning:'우유',  category:'음식'},
+    {kanji:'お茶',  reading:'おちゃ',  romaji:'ocha',      meaning:'녹차',     category:'음식'},
+    {kanji:'コーヒー',reading:'こーひー',romaji:'koohii',  meaning:'커피',     category:'음식'},
+    {kanji:'砂糖',  reading:'さとう',  romaji:'satou',     meaning:'설탕',     category:'음식'},
+    {kanji:'塩',    reading:'しお',    romaji:'shio',      meaning:'소금',     category:'음식'},
+    {kanji:'魚',    reading:'さかな',  romaji:'sakana',    meaning:'생선',     category:'음식'},
+    {kanji:'寿司',  reading:'すし',    romaji:'sushi',     meaning:'초밥',     category:'음식'},
+    {kanji:'ラーメン',reading:'らーめん',romaji:'raamen',  meaning:'라멘',     category:'음식'},
+    {kanji:'弁当',  reading:'べんとう',romaji:'bentou',    meaning:'도시락',   category:'음식'},
+    {kanji:'レストラン',reading:'れすとらん',romaji:'resutoran',meaning:'식당',category:'장소'},
+    {kanji:'食堂',  reading:'しょくどう',romaji:'shokudou', meaning:'구내식당', category:'장소'},
+    {kanji:'料理',  reading:'りょうり',romaji:'ryouri',    meaning:'요리',     category:'음식'},
+    {kanji:'朝食',  reading:'ちょうしょく',romaji:'choushoku',meaning:'아침식사',category:'음식'},
+    {kanji:'夕食',  reading:'ゆうしょく',romaji:'yuushoku', meaning:'저녁식사', category:'음식'},
+  ]},
+  { name:'Level 8', words:[
+    {kanji:'一',    reading:'いち',    romaji:'ichi',      meaning:'1 (일)',    category:'숫자'},
+    {kanji:'二',    reading:'に',      romaji:'ni',        meaning:'2 (이)',    category:'숫자'},
+    {kanji:'三',    reading:'さん',    romaji:'san',       meaning:'3 (삼)',    category:'숫자'},
+    {kanji:'四',    reading:'し/よん', romaji:'shi/yon',   meaning:'4 (사)',    category:'숫자'},
+    {kanji:'五',    reading:'ご',      romaji:'go',        meaning:'5 (오)',    category:'숫자'},
+    {kanji:'六',    reading:'ろく',    romaji:'roku',      meaning:'6 (육)',    category:'숫자'},
+    {kanji:'七',    reading:'なな/しち',romaji:'nana/shichi',meaning:'7 (칠)',  category:'숫자'},
+    {kanji:'八',    reading:'はち',    romaji:'hachi',     meaning:'8 (팔)',    category:'숫자'},
+    {kanji:'九',    reading:'きゅう',  romaji:'kyuu',      meaning:'9 (구)',    category:'숫자'},
+    {kanji:'十',    reading:'じゅう',  romaji:'juu',       meaning:'10 (십)',   category:'숫자'},
+    {kanji:'百',    reading:'ひゃく',  romaji:'hyaku',     meaning:'100 (백)', category:'숫자'},
+    {kanji:'千',    reading:'せん',    romaji:'sen',       meaning:'1000 (천)',category:'숫자'},
+    {kanji:'万',    reading:'まん',    romaji:'man',       meaning:'10000 (만)',category:'숫자'},
+    {kanji:'円',    reading:'えん',    romaji:'en',        meaning:'엔(화폐)',  category:'숫자'},
+    {kanji:'今日',  reading:'きょう',  romaji:'kyou',      meaning:'오늘',     category:'시간'},
+    {kanji:'明日',  reading:'あした',  romaji:'ashita',    meaning:'내일',     category:'시간'},
+    {kanji:'昨日',  reading:'きのう',  romaji:'kinou',     meaning:'어제',     category:'시간'},
+    {kanji:'今',    reading:'いま',    romaji:'ima',       meaning:'지금',     category:'시간'},
+    {kanji:'朝',    reading:'あさ',    romaji:'asa',       meaning:'아침',     category:'시간'},
+    {kanji:'夜',    reading:'よる',    romaji:'yoru',      meaning:'밤',       category:'시간'},
+  ]},
+  { name:'Level 9', words:[
+    {kanji:'月曜日',reading:'げつようび',romaji:'getsuyoubi',meaning:'월요일', category:'시간'},
+    {kanji:'火曜日',reading:'かようび', romaji:'kayoubi',   meaning:'화요일',   category:'시간'},
+    {kanji:'水曜日',reading:'すいようび',romaji:'suiyoubi', meaning:'수요일',   category:'시간'},
+    {kanji:'木曜日',reading:'もくようび',romaji:'mokuyoubi',meaning:'목요일',   category:'시간'},
+    {kanji:'金曜日',reading:'きんようび',romaji:'kinyoubi', meaning:'금요일',   category:'시간'},
+    {kanji:'土曜日',reading:'どようび', romaji:'doyoubi',   meaning:'토요일',   category:'시간'},
+    {kanji:'日曜日',reading:'にちようび',romaji:'nichiyoubi',meaning:'일요일',  category:'시간'},
+    {kanji:'午前',  reading:'ごぜん',   romaji:'gozen',     meaning:'오전',     category:'시간'},
+    {kanji:'午後',  reading:'ごご',     romaji:'gogo',      meaning:'오후',     category:'시간'},
+    {kanji:'時間',  reading:'じかん',   romaji:'jikan',     meaning:'시간',     category:'시간'},
+    {kanji:'分',    reading:'ふん/ぷん',romaji:'fun/pun',   meaning:'분',       category:'시간'},
+    {kanji:'半',    reading:'はん',     romaji:'han',       meaning:'반(30분)', category:'시간'},
+    {kanji:'週',    reading:'しゅう',   romaji:'shuu',      meaning:'주(주간)', category:'시간'},
+    {kanji:'月',    reading:'つき/がつ',romaji:'tsuki/gatsu',meaning:'달/월',  category:'시간'},
+    {kanji:'年',    reading:'とし/ねん',romaji:'toshi/nen', meaning:'해/년',    category:'시간'},
+    {kanji:'春',    reading:'はる',     romaji:'haru',      meaning:'봄',       category:'시간'},
+    {kanji:'夏',    reading:'なつ',     romaji:'natsu',     meaning:'여름',     category:'시간'},
+    {kanji:'秋',    reading:'あき',     romaji:'aki',       meaning:'가을',     category:'시간'},
+    {kanji:'冬',    reading:'ふゆ',     romaji:'fuyu',      meaning:'겨울',     category:'시간'},
+    {kanji:'誕生日',reading:'たんじょうび',romaji:'tanjoubi',meaning:'생일',   category:'시간'},
+  ]},
+  { name:'Level 10', words:[
+    {kanji:'勉強する',reading:'べんきょうする',romaji:'benkyou suru',meaning:'공부하다',category:'동사'},
+    {kanji:'仕事する',reading:'しごとする',romaji:'shigoto suru',meaning:'일하다',  category:'동사'},
+    {kanji:'運動する',reading:'うんどうする',romaji:'undou suru', meaning:'운동하다',category:'동사'},
+    {kanji:'散歩する',reading:'さんぽする',romaji:'sanpo suru',  meaning:'산책하다',category:'동사'},
+    {kanji:'旅行する',reading:'りょこうする',romaji:'ryokou suru',meaning:'여행하다',category:'동사'},
+    {kanji:'洗う',  reading:'あらう',   romaji:'arau',      meaning:'씻다',     category:'동사'},
+    {kanji:'着る',  reading:'きる',     romaji:'kiru',      meaning:'입다',     category:'동사'},
+    {kanji:'脱ぐ',  reading:'ぬぐ',     romaji:'nugu',      meaning:'벗다',     category:'동사'},
+    {kanji:'乗る',  reading:'のる',     romaji:'noru',      meaning:'타다',     category:'동사'},
+    {kanji:'降りる',reading:'おりる',   romaji:'oriru',     meaning:'내리다',   category:'동사'},
+    {kanji:'泳ぐ',  reading:'およぐ',   romaji:'oyogu',     meaning:'수영하다', category:'동사'},
+    {kanji:'走る',  reading:'はしる',   romaji:'hashiru',   meaning:'달리다',   category:'동사'},
+    {kanji:'歩く',  reading:'あるく',   romaji:'aruku',     meaning:'걷다',     category:'동사'},
+    {kanji:'止まる',reading:'とまる',   romaji:'tomaru',    meaning:'멈추다',   category:'동사'},
+    {kanji:'始まる',reading:'はじまる', romaji:'hajimaru',  meaning:'시작되다', category:'동사'},
+    {kanji:'終わる',reading:'おわる',   romaji:'owaru',     meaning:'끝나다',   category:'동사'},
+    {kanji:'入る',  reading:'はいる',   romaji:'hairu',     meaning:'들어가다', category:'동사'},
+    {kanji:'出る',  reading:'でる',     romaji:'deru',      meaning:'나오다',   category:'동사'},
+    {kanji:'上がる',reading:'あがる',   romaji:'agaru',     meaning:'올라가다', category:'동사'},
+    {kanji:'下がる',reading:'さがる',   romaji:'sagaru',    meaning:'내려가다', category:'동사'},
+  ]},
+  { name:'Level 11', words:[
+    {kanji:'嬉しい',reading:'うれしい', romaji:'ureshii',   meaning:'기쁘다',   category:'감정'},
+    {kanji:'悲しい',reading:'かなしい', romaji:'kanashii',  meaning:'슬프다',   category:'감정'},
+    {kanji:'楽しい',reading:'たのしい', romaji:'tanoshii',  meaning:'즐겁다',   category:'감정'},
+    {kanji:'怖い',  reading:'こわい',   romaji:'kowai',     meaning:'무섭다',   category:'감정'},
+    {kanji:'恥ずかしい',reading:'はずかしい',romaji:'hazukashii',meaning:'부끄럽다',category:'감정'},
+    {kanji:'寂しい',reading:'さびしい', romaji:'sabishii',  meaning:'외롭다',   category:'감정'},
+    {kanji:'眠い',  reading:'ねむい',   romaji:'nemui',     meaning:'졸리다',   category:'감정'},
+    {kanji:'疲れる',reading:'つかれる', romaji:'tsukareru', meaning:'피곤하다', category:'감정'},
+    {kanji:'痛い',  reading:'いたい',   romaji:'itai',      meaning:'아프다',   category:'감정'},
+    {kanji:'忙しい',reading:'いそがしい',romaji:'isogashii', meaning:'바쁘다',  category:'감정'},
+    {kanji:'暇',    reading:'ひま',     romaji:'hima',      meaning:'한가하다', category:'감정'},
+    {kanji:'元気',  reading:'げんき',   romaji:'genki',     meaning:'건강/활기',category:'감정'},
+    {kanji:'大丈夫',reading:'だいじょうぶ',romaji:'daijoubu',meaning:'괜찮다',  category:'감정'},
+    {kanji:'大切',  reading:'たいせつ', romaji:'taisetsu',  meaning:'소중하다', category:'감정'},
+    {kanji:'好き',  reading:'すき',     romaji:'suki',      meaning:'좋아하다', category:'감정'},
+    {kanji:'嫌い',  reading:'きらい',   romaji:'kirai',     meaning:'싫어하다', category:'감정'},
+    {kanji:'心配',  reading:'しんぱい', romaji:'shinpai',   meaning:'걱정',     category:'감정'},
+    {kanji:'驚く',  reading:'おどろく', romaji:'odoroku',   meaning:'놀라다',   category:'감정'},
+    {kanji:'笑う',  reading:'わらう',   romaji:'warau',     meaning:'웃다',     category:'감정'},
+    {kanji:'泣く',  reading:'なく',     romaji:'naku',      meaning:'울다',     category:'감정'},
+  ]},
+  { name:'Level 12', words:[
+    {kanji:'右',    reading:'みぎ',     romaji:'migi',      meaning:'오른쪽',   category:'방향'},
+    {kanji:'左',    reading:'ひだり',   romaji:'hidari',    meaning:'왼쪽',     category:'방향'},
+    {kanji:'上',    reading:'うえ',     romaji:'ue',        meaning:'위',       category:'방향'},
+    {kanji:'下',    reading:'した',     romaji:'shita',     meaning:'아래',     category:'방향'},
+    {kanji:'前',    reading:'まえ',     romaji:'mae',       meaning:'앞',       category:'방향'},
+    {kanji:'後ろ',  reading:'うしろ',   romaji:'ushiro',    meaning:'뒤',       category:'방향'},
+    {kanji:'中',    reading:'なか',     romaji:'naka',      meaning:'안/중간',  category:'방향'},
+    {kanji:'外',    reading:'そと',     romaji:'soto',      meaning:'밖',       category:'방향'},
+    {kanji:'東',    reading:'ひがし',   romaji:'higashi',   meaning:'동쪽',     category:'방향'},
+    {kanji:'西',    reading:'にし',     romaji:'nishi',     meaning:'서쪽',     category:'방향'},
+    {kanji:'南',    reading:'みなみ',   romaji:'minami',    meaning:'남쪽',     category:'방향'},
+    {kanji:'北',    reading:'きた',     romaji:'kita',      meaning:'북쪽',     category:'방향'},
+    {kanji:'近い',  reading:'ちかい',   romaji:'chikai',    meaning:'가깝다',   category:'방향'},
+    {kanji:'遠い',  reading:'とおい',   romaji:'tooi',      meaning:'멀다',     category:'방향'},
+    {kanji:'ここ',  reading:'ここ',     romaji:'koko',      meaning:'여기',     category:'방향'},
+    {kanji:'そこ',  reading:'そこ',     romaji:'soko',      meaning:'거기',     category:'방향'},
+    {kanji:'あそこ',reading:'あそこ',   romaji:'asoko',     meaning:'저기',     category:'방향'},
+    {kanji:'どこ',  reading:'どこ',     romaji:'doko',      meaning:'어디',     category:'방향'},
+    {kanji:'隣',    reading:'となり',   romaji:'tonari',    meaning:'옆/이웃',  category:'방향'},
+    {kanji:'間',    reading:'あいだ',   romaji:'aida',      meaning:'사이',     category:'방향'},
+  ]},
+  { name:'Level 13', words:[
+    {kanji:'白',    reading:'しろ',     romaji:'shiro',     meaning:'흰색',     category:'색'},
+    {kanji:'黒',    reading:'くろ',     romaji:'kuro',      meaning:'검정',     category:'색'},
+    {kanji:'赤',    reading:'あか',     romaji:'aka',       meaning:'빨강',     category:'색'},
+    {kanji:'青',    reading:'あお',     romaji:'ao',        meaning:'파랑',     category:'색'},
+    {kanji:'黄色',  reading:'きいろ',   romaji:'kiiro',     meaning:'노랑',     category:'색'},
+    {kanji:'緑',    reading:'みどり',   romaji:'midori',    meaning:'초록',     category:'색'},
+    {kanji:'茶色',  reading:'ちゃいろ', romaji:'chairo',    meaning:'갈색',     category:'색'},
+    {kanji:'紫',    reading:'むらさき', romaji:'murasaki',  meaning:'보라',     category:'색'},
+    {kanji:'ピンク',reading:'ぴんく',   romaji:'pinku',     meaning:'분홍',     category:'색'},
+    {kanji:'橙色',  reading:'だいだいいろ',romaji:'daidai iro',meaning:'주황',  category:'색'},
+    {kanji:'天気',  reading:'てんき',   romaji:'tenki',     meaning:'날씨',     category:'날씨'},
+    {kanji:'晴れ',  reading:'はれ',     romaji:'hare',      meaning:'맑음',     category:'날씨'},
+    {kanji:'曇り',  reading:'くもり',   romaji:'kumori',    meaning:'흐림',     category:'날씨'},
+    {kanji:'台風',  reading:'たいふう', romaji:'taifuu',    meaning:'태풍',     category:'날씨'},
+    {kanji:'雷',    reading:'かみなり', romaji:'kaminari',  meaning:'천둥',     category:'날씨'},
+    {kanji:'気温',  reading:'きおん',   romaji:'kion',      meaning:'기온',     category:'날씨'},
+    {kanji:'暖かい',reading:'あたたかい',romaji:'atatakai', meaning:'따뜻하다', category:'날씨'},
+    {kanji:'涼しい',reading:'すずしい', romaji:'suzushii',  meaning:'시원하다', category:'날씨'},
+    {kanji:'蒸し暑い',reading:'むしあつい',romaji:'mushiatsui',meaning:'후덥지근하다',category:'날씨'},
+    {kanji:'季節',  reading:'きせつ',   romaji:'kisetsu',   meaning:'계절',     category:'날씨'},
+  ]},
+  { name:'Level 14', words:[
+    {kanji:'先生',  reading:'せんせい', romaji:'sensei',    meaning:'선생님',   category:'직업'},
+    {kanji:'学生',  reading:'がくせい', romaji:'gakusei',   meaning:'학생',     category:'직업'},
+    {kanji:'医者',  reading:'いしゃ',   romaji:'isha',      meaning:'의사',     category:'직업'},
+    {kanji:'看護師',reading:'かんごし', romaji:'kangoshi',  meaning:'간호사',   category:'직업'},
+    {kanji:'警察',  reading:'けいさつ', romaji:'keisatsu',  meaning:'경찰',     category:'직업'},
+    {kanji:'消防士',reading:'しょうぼうし',romaji:'shouboushi',meaning:'소방관',category:'직업'},
+    {kanji:'料理人',reading:'りょうりにん',romaji:'ryourinin',meaning:'요리사', category:'직업'},
+    {kanji:'運転手',reading:'うんてんしゅ',romaji:'untenshu',meaning:'운전기사',category:'직업'},
+    {kanji:'銀行員',reading:'ぎんこういん',romaji:'ginkouin',meaning:'은행원', category:'직업'},
+    {kanji:'店員',  reading:'てんいん', romaji:'ten-in',    meaning:'점원',     category:'직업'},
+    {kanji:'友達',  reading:'ともだち', romaji:'tomodachi', meaning:'친구',     category:'사람'},
+    {kanji:'先輩',  reading:'せんぱい', romaji:'senpai',    meaning:'선배',     category:'사람'},
+    {kanji:'後輩',  reading:'こうはい', romaji:'kouhai',    meaning:'후배',     category:'사람'},
+    {kanji:'同僚',  reading:'どうりょう',romaji:'douryou',  meaning:'동료',     category:'사람'},
+    {kanji:'隣人',  reading:'りんじん', romaji:'rinjin',    meaning:'이웃',     category:'사람'},
+    {kanji:'夫',    reading:'おっと',   romaji:'otto',      meaning:'남편',     category:'사람'},
+    {kanji:'妻',    reading:'つま',     romaji:'tsuma',     meaning:'아내',     category:'사람'},
+    {kanji:'祖父',  reading:'そふ',     romaji:'sofu',      meaning:'할아버지', category:'사람'},
+    {kanji:'祖母',  reading:'そぼ',     romaji:'sobo',      meaning:'할머니',   category:'사람'},
+    {kanji:'子供',  reading:'こども',   romaji:'kodomo',    meaning:'어린이',   category:'사람'},
+  ]},
+  { name:'Level 15', words:[
+    {kanji:'電気',  reading:'でんき',   romaji:'denki',     meaning:'전기',     category:'물건'},
+    {kanji:'冷蔵庫',reading:'れいぞうこ',romaji:'reizouko',  meaning:'냉장고',   category:'물건'},
+    {kanji:'洗濯機',reading:'せんたくき',romaji:'sentakuki', meaning:'세탁기',   category:'물건'},
+    {kanji:'エアコン',reading:'えあこん',romaji:'eakon',     meaning:'에어컨',   category:'물건'},
+    {kanji:'扇風機',reading:'せんぷうき',romaji:'senpuuki',  meaning:'선풍기',   category:'물건'},
+    {kanji:'掃除機',reading:'そうじき', romaji:'soujiki',   meaning:'청소기',   category:'물건'},
+    {kanji:'コンピューター',reading:'こんぴゅーたー',romaji:'konpyuutaa',meaning:'컴퓨터',category:'물건'},
+    {kanji:'スマホ',reading:'すまほ',   romaji:'sumaho',    meaning:'스마트폰', category:'물건'},
+    {kanji:'カメラ',reading:'かめら',   romaji:'kamera',    meaning:'카메라',   category:'물건'},
+    {kanji:'財布',  reading:'さいふ',   romaji:'saifu',     meaning:'지갑',     category:'물건'},
+    {kanji:'住所',  reading:'じゅうしょ',romaji:'juusho',    meaning:'주소',     category:'생활'},
+    {kanji:'名前',  reading:'なまえ',   romaji:'namae',     meaning:'이름',     category:'생활'},
+    {kanji:'電話番号',reading:'でんわばんごう',romaji:'denwa bangou',meaning:'전화번호',category:'생활'},
+    {kanji:'パスポート',reading:'ぱすぽーと',romaji:'pasupooto',meaning:'여권',  category:'생활'},
+    {kanji:'切符',  reading:'きっぷ',   romaji:'kippu',     meaning:'표/티켓',  category:'생활'},
+    {kanji:'予約',  reading:'よやく',   romaji:'yoyaku',    meaning:'예약',     category:'생활'},
+    {kanji:'料金',  reading:'りょうきん',romaji:'ryoukin',   meaning:'요금',     category:'생활'},
+    {kanji:'値段',  reading:'ねだん',   romaji:'nedan',     meaning:'가격',     category:'생활'},
+    {kanji:'お釣り',reading:'おつり',   romaji:'otsuri',    meaning:'거스름돈', category:'생활'},
+    {kanji:'領収書',reading:'りょうしゅうしょ',romaji:'ryoushuusho',meaning:'영수증',category:'생활'},
+  ]},
+  { name:'Level 16', words:[
+    {kanji:'病気',  reading:'びょうき', romaji:'byouki',    meaning:'병/질병',  category:'건강'},
+    {kanji:'頭痛',  reading:'ずつう',   romaji:'zutsuu',    meaning:'두통',     category:'건강'},
+    {kanji:'熱',    reading:'ねつ',     romaji:'netsu',     meaning:'열',       category:'건강'},
+    {kanji:'咳',    reading:'せき',     romaji:'seki',      meaning:'기침',     category:'건강'},
+    {kanji:'薬',    reading:'くすり',   romaji:'kusuri',    meaning:'약',       category:'건강'},
+    {kanji:'手術',  reading:'しゅじゅつ',romaji:'shujutsu',  meaning:'수술',     category:'건강'},
+    {kanji:'入院',  reading:'にゅういん',romaji:'nyuuin',    meaning:'입원',     category:'건강'},
+    {kanji:'退院',  reading:'たいいん', romaji:'taiin',     meaning:'퇴원',     category:'건강'},
+    {kanji:'健康',  reading:'けんこう', romaji:'kenkou',    meaning:'건강',     category:'건강'},
+    {kanji:'運動',  reading:'うんどう', romaji:'undou',     meaning:'운동',     category:'건강'},
+    {kanji:'授業',  reading:'じゅぎょう',romaji:'jugyou',    meaning:'수업',     category:'교육'},
+    {kanji:'宿題',  reading:'しゅくだい',romaji:'shukudai',  meaning:'숙제',     category:'교육'},
+    {kanji:'試験',  reading:'しけん',   romaji:'shiken',    meaning:'시험',     category:'교육'},
+    {kanji:'成績',  reading:'せいせき', romaji:'seiseki',   meaning:'성적',     category:'교육'},
+    {kanji:'卒業',  reading:'そつぎょう',romaji:'sotsugyou', meaning:'졸업',     category:'교육'},
+    {kanji:'入学',  reading:'にゅうがく',romaji:'nyuugaku',  meaning:'입학',     category:'교육'},
+    {kanji:'教室',  reading:'きょうしつ',romaji:'kyoushitsu',meaning:'교실',     category:'교육'},
+    {kanji:'教科書',reading:'きょうかしょ',romaji:'kyoukasho',meaning:'교과서', category:'교육'},
+    {kanji:'辞書',  reading:'じしょ',   romaji:'jisho',     meaning:'사전',     category:'교육'},
+    {kanji:'答え',  reading:'こたえ',   romaji:'kotae',     meaning:'대답/정답',category:'교육'},
+  ]},
+  { name:'Level 17', words:[
+    {kanji:'旅行',  reading:'りょこう', romaji:'ryokou',    meaning:'여행',     category:'여가'},
+    {kanji:'趣味',  reading:'しゅみ',   romaji:'shumi',     meaning:'취미',     category:'여가'},
+    {kanji:'映画',  reading:'えいが',   romaji:'eiga',      meaning:'영화',     category:'여가'},
+    {kanji:'音楽',  reading:'おんがく', romaji:'ongaku',    meaning:'음악',     category:'여가'},
+    {kanji:'歌',    reading:'うた',     romaji:'uta',       meaning:'노래',     category:'여가'},
+    {kanji:'踊り',  reading:'おどり',   romaji:'odori',     meaning:'춤',       category:'여가'},
+    {kanji:'絵',    reading:'え',       romaji:'e',         meaning:'그림',     category:'여가'},
+    {kanji:'写真',  reading:'しゃしん', romaji:'shashin',   meaning:'사진',     category:'여가'},
+    {kanji:'本',    reading:'ほん',     romaji:'hon',       meaning:'책',       category:'여가'},
+    {kanji:'スポーツ',reading:'すぽーつ',romaji:'supootsu',  meaning:'스포츠',   category:'여가'},
+    {kanji:'野球',  reading:'やきゅう', romaji:'yakyuu',    meaning:'야구',     category:'여가'},
+    {kanji:'サッカー',reading:'さっかー',romaji:'sakkaa',    meaning:'축구',     category:'여가'},
+    {kanji:'水泳',  reading:'すいえい', romaji:'suiei',     meaning:'수영',     category:'여가'},
+    {kanji:'登山',  reading:'とざん',   romaji:'tozan',     meaning:'등산',     category:'여가'},
+    {kanji:'料理',  reading:'りょうり', romaji:'ryouri',    meaning:'요리',     category:'여가'},
+    {kanji:'買い物',reading:'かいもの', romaji:'kaimono',   meaning:'쇼핑',     category:'여가'},
+    {kanji:'散歩',  reading:'さんぽ',   romaji:'sanpo',     meaning:'산책',     category:'여가'},
+    {kanji:'ゲーム',reading:'げーむ',   romaji:'geemu',     meaning:'게임',     category:'여가'},
+    {kanji:'インターネット',reading:'いんたーねっと',romaji:'intaanetto',meaning:'인터넷',category:'여가'},
+    {kanji:'パーティー',reading:'ぱーてぃー',romaji:'paatii', meaning:'파티',   category:'여가'},
+  ]},
+  { name:'Level 18', words:[
+    {kanji:'電車',  reading:'でんしゃ', romaji:'densha',    meaning:'전철',     category:'교통'},
+    {kanji:'地下鉄',reading:'ちかてつ', romaji:'chikatetsu',meaning:'지하철',   category:'교통'},
+    {kanji:'バス停',reading:'ばすてい', romaji:'basutei',   meaning:'버스정류장',category:'교통'},
+    {kanji:'タクシー',reading:'たくしー',romaji:'takushii',  meaning:'택시',     category:'교통'},
+    {kanji:'信号',  reading:'しんごう', romaji:'shingou',   meaning:'신호등',   category:'교통'},
+    {kanji:'交差点',reading:'こうさてん',romaji:'kousaten',  meaning:'교차로',   category:'교통'},
+    {kanji:'駐車場',reading:'ちゅうしゃじょう',romaji:'chuushajou',meaning:'주차장',category:'교통'},
+    {kanji:'空港',  reading:'くうこう', romaji:'kuukou',    meaning:'공항',     category:'교통'},
+    {kanji:'港',    reading:'みなと',   romaji:'minato',    meaning:'항구',     category:'교통'},
+    {kanji:'地図',  reading:'ちず',     romaji:'chizu',     meaning:'지도',     category:'교통'},
+    {kanji:'国',    reading:'くに',     romaji:'kuni',      meaning:'나라',     category:'사회'},
+    {kanji:'都市',  reading:'とし',     romaji:'toshi',     meaning:'도시',     category:'사회'},
+    {kanji:'田舎',  reading:'いなか',   romaji:'inaka',     meaning:'시골',     category:'사회'},
+    {kanji:'世界',  reading:'せかい',   romaji:'sekai',     meaning:'세계',     category:'사회'},
+    {kanji:'社会',  reading:'しゃかい', romaji:'shakai',    meaning:'사회',     category:'사회'},
+    {kanji:'文化',  reading:'ぶんか',   romaji:'bunka',     meaning:'문화',     category:'사회'},
+    {kanji:'言語',  reading:'げんご',   romaji:'gengo',     meaning:'언어',     category:'사회'},
+    {kanji:'日本語',reading:'にほんご', romaji:'nihongo',   meaning:'일본어',   category:'사회'},
+    {kanji:'英語',  reading:'えいご',   romaji:'eigo',      meaning:'영어',     category:'사회'},
+    {kanji:'韓国語',reading:'かんこくご',romaji:'kankokugo', meaning:'한국어',   category:'사회'},
+  ]},
+  { name:'Level 19', words:[
+    {kanji:'挨拶',  reading:'あいさつ', romaji:'aisatsu',   meaning:'인사',     category:'표현'},
+    {kanji:'ありがとう',reading:'ありがとう',romaji:'arigatou',meaning:'감사합니다',category:'표현'},
+    {kanji:'すみません',reading:'すみません',romaji:'sumimasen',meaning:'실례합니다',category:'표현'},
+    {kanji:'どうぞ',reading:'どうぞ',   romaji:'douzo',     meaning:'어서요/부탁해요',category:'표현'},
+    {kanji:'はい',  reading:'はい',     romaji:'hai',       meaning:'네',       category:'표현'},
+    {kanji:'いいえ',reading:'いいえ',   romaji:'iie',       meaning:'아니오',   category:'표현'},
+    {kanji:'もちろん',reading:'もちろん',romaji:'mochiron',  meaning:'물론',     category:'표현'},
+    {kanji:'大丈夫',reading:'だいじょうぶ',romaji:'daijoubu',meaning:'괜찮아요', category:'표현'},
+    {kanji:'お願い',reading:'おねがい', romaji:'onegai',    meaning:'부탁해요', category:'표현'},
+    {kanji:'ちょっと',reading:'ちょっと',romaji:'chotto',   meaning:'잠깐/조금',category:'표현'},
+    {kanji:'何',    reading:'なに/なん',romaji:'nani/nan',  meaning:'무엇',     category:'표현'},
+    {kanji:'誰',    reading:'だれ',     romaji:'dare',      meaning:'누구',     category:'표현'},
+    {kanji:'いつ',  reading:'いつ',     romaji:'itsu',      meaning:'언제',     category:'표현'},
+    {kanji:'なぜ',  reading:'なぜ',     romaji:'naze',      meaning:'왜',       category:'표현'},
+    {kanji:'どう',  reading:'どう',     romaji:'dou',       meaning:'어떻게',   category:'표현'},
+    {kanji:'どんな',reading:'どんな',   romaji:'donna',     meaning:'어떤',     category:'표현'},
+    {kanji:'いくら',reading:'いくら',   romaji:'ikura',     meaning:'얼마',     category:'표현'},
+    {kanji:'いくつ',reading:'いくつ',   romaji:'ikutsu',    meaning:'몇 개',    category:'표현'},
+    {kanji:'何時',  reading:'なんじ',   romaji:'nanji',     meaning:'몇 시',    category:'표현'},
+    {kanji:'何人',  reading:'なんにん', romaji:'nannin',    meaning:'몇 명',    category:'표현'},
+  ]},
+  { name:'Level 20', words:[
+    {kanji:'自分',  reading:'じぶん',   romaji:'jibun',     meaning:'자기 자신',category:'N5완성'},
+    {kanji:'物',    reading:'もの',     romaji:'mono',      meaning:'물건/것',  category:'N5완성'},
+    {kanji:'事',    reading:'こと',     romaji:'koto',      meaning:'일/것',    category:'N5완성'},
+    {kanji:'所',    reading:'ところ',   romaji:'tokoro',    meaning:'곳/장소',  category:'N5완성'},
+    {kanji:'時',    reading:'とき',     romaji:'toki',      meaning:'때/시간',  category:'N5완성'},
+    {kanji:'方',    reading:'かた/ほう',romaji:'kata/hou',  meaning:'방향/분',  category:'N5완성'},
+    {kanji:'気',    reading:'き',       romaji:'ki',        meaning:'기운/마음',category:'N5완성'},
+    {kanji:'同じ',  reading:'おなじ',   romaji:'onaji',     meaning:'같다',     category:'N5완성'},
+    {kanji:'違う',  reading:'ちがう',   romaji:'chigau',    meaning:'다르다',   category:'N5완성'},
+    {kanji:'必要',  reading:'ひつよう', romaji:'hitsuyou',  meaning:'필요',     category:'N5완성'},
+    {kanji:'便利',  reading:'べんり',   romaji:'benri',     meaning:'편리하다', category:'N5완성'},
+    {kanji:'不便',  reading:'ふべん',   romaji:'fuben',     meaning:'불편하다', category:'N5완성'},
+    {kanji:'安全',  reading:'あんぜん', romaji:'anzen',     meaning:'안전',     category:'N5완성'},
+    {kanji:'危険',  reading:'きけん',   romaji:'kiken',     meaning:'위험',     category:'N5완성'},
+    {kanji:'簡単',  reading:'かんたん', romaji:'kantan',    meaning:'간단하다', category:'N5완성'},
+    {kanji:'複雑',  reading:'ふくざつ', romaji:'fukuzatsu', meaning:'복잡하다', category:'N5완성'},
+    {kanji:'特別',  reading:'とくべつ', romaji:'tokubetsu', meaning:'특별하다', category:'N5완성'},
+    {kanji:'普通',  reading:'ふつう',   romaji:'futsuu',    meaning:'보통/평범',category:'N5완성'},
+    {kanji:'最初',  reading:'さいしょ', romaji:'saisho',    meaning:'처음',     category:'N5완성'},
+    {kanji:'最後',  reading:'さいご',   romaji:'saigo',     meaning:'마지막',   category:'N5완성'},
   ]},
 ];
 
 const PASS_RATE = 0.8;
-const PASS_MIN = 10;
+const PASS_MIN  = 10;
+const AZURE_TTS_KEY = '8RGgLixORTXotPKIAxlKk1uWfLJpwoC97nfJpL1Ra2V56f9oscBIJQQJ99CEACNns7RXJ3w3AAAYACOGJUFu';
+const AZURE_REGION  = 'koreacentral';
 
+let currentLevel = 0;
+let WORDS = LEVELS[0].words;
+let currentWord, currentChoices, answered = false;
+let combo = 0, correctCount = 0, wrongCount = 0, streakCount = 0;
+let mode = 'hira2meaning', usedWords = [], totalShown = 0;
+let levelCorrect = 0, levelTotal = 0;
+
+/* 저장소 */
 function loadProgress() {
-  try { return JSON.parse(localStorage.getItem('jp_progress') || '{}'); }
-  catch(e) { return {}; }
+  try { return JSON.parse(localStorage.getItem('jp_progress') || '{}'); } catch(e) { return {}; }
 }
 function saveProgress(p) { localStorage.setItem('jp_progress', JSON.stringify(p)); }
 
@@ -44,35 +740,33 @@ function getUnlockedLevel() {
   return 0;
 }
 
-let currentLevel = 0;
-let WORDS = LEVELS[0].words;
-let currentWord, currentChoices, answered = false;
-let combo = 0, correctCount = 0, wrongCount = 0, streakCount = 0;
-let mode = 'hira2meaning';
-let usedWords = [], totalShown = 0;
-let levelCorrect = 0, levelTotal = 0;
+function getToday() { return new Date().toISOString().slice(0, 10); }
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem('jp_stats') || '{}'); } catch(e) { return {}; }
+}
+function saveStats(s) { localStorage.setItem('jp_stats', JSON.stringify(s)); }
 
-const AZURE_TTS_KEY = '8RGgLixORTXotPKIAxlKk1uWfLJpwoC97nfJpL1Ra2V56f9oscBIJQQJ99CEACNns7RXJ3w3AAAYACOGJUFu';
-const AZURE_REGION = 'koreacentral';
+function recordAnswer(isCorrect) {
+  const stats = loadStats();
+  const today = getToday();
+  if (!stats[today]) stats[today] = { correct: 0, total: 0 };
+  stats[today].total++;
+  if (isCorrect) stats[today].correct++;
+  saveStats(stats);
+}
 
+/* TTS */
 async function speakWord(text) {
-  const txt = text || currentWord?.reading;
-  if (!txt) return;
+  const txt = text || currentWord.reading;
   try {
     const tokenRes = await fetch(
-      `https://${AZURE_REGION}.api.cognitive.microsoft.com/sts/v1.0/issueToken`,
-      { method: 'POST', headers: {'Ocp-Apim-Subscription-Key': AZURE_TTS_KEY} }
+      'https://' + AZURE_REGION + '.api.cognitive.microsoft.com/sts/v1.0/issueToken',
+      { method: 'POST', headers: { 'Ocp-Apim-Subscription-Key': AZURE_TTS_KEY } }
     );
     const token = await tokenRes.text();
-
-    const ssml = `<speak version='1.0' xml:lang='ja-JP'>
-      <voice name='ja-JP-NanamiNeural'>
-        <prosody rate='-10%'>${txt}</prosody>
-      </voice>
-    </speak>`;
-
+    const ssml = "<speak version='1.0' xml:lang='ja-JP'><voice name='ja-JP-NanamiNeural'><prosody rate='-10%'>" + txt + "</prosody></voice></speak>";
     const audioRes = await fetch(
-      `https://${AZURE_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`,
+      'https://' + AZURE_REGION + '.tts.speech.microsoft.com/cognitiveservices/v1',
       {
         method: 'POST',
         headers: {
@@ -84,83 +778,51 @@ async function speakWord(text) {
       }
     );
     const blob = await audioRes.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.play();
-  } catch(e) {
-    console.error('TTS error:', e);
-  }
+    new Audio(URL.createObjectURL(blob)).play();
+  } catch(e) { console.error('TTS error:', e); }
 }
 
-function getToday() {
-  return new Date().toISOString().slice(0,10);
-}
-
-function loadStats() {
-  try { return JSON.parse(localStorage.getItem('jp_stats') || '{}'); }
-  catch(e) { return {}; }
-}
-function saveStats(stats) {
-  localStorage.setItem('jp_stats', JSON.stringify(stats));
-}
-
-function recordAnswer(isCorrect) {
-  const stats = loadStats();
-  const today = getToday();
-  if (!stats[today]) stats[today] = {correct:0, total:0};
-  stats[today].total++;
-  if (isCorrect) stats[today].correct++;
-  saveStats(stats);
-}
-
+/* 레벨 */
 function selectLevel(idx) {
-  const unlockedUpTo = getUnlockedLevel();
-  if (idx > unlockedUpTo) return;
-
+  if (idx > getUnlockedLevel()) return;
   currentLevel = idx;
   WORDS = LEVELS[idx].words;
   usedWords = []; totalShown = 0;
   levelCorrect = 0; levelTotal = 0;
   correctCount = 0; wrongCount = 0; streakCount = 0; combo = 0;
-
-  updateCombo();
-  updateScore();
-  document.getElementById('level-label').textContent = 'Lv.' + (idx+1);
+  document.getElementById('level-label').textContent = 'Lv.' + (idx + 1);
+  updateCombo(); updateScore();
   toggleLevel();
   loadQuestion();
 }
 
 function toggleLevel() {
-  const panel = document.getElementById('level-panel');
-  panel.classList.toggle('open');
-  if (panel.classList.contains('open')) renderLevelPanel();
+  const p = document.getElementById('level-panel');
+  if (p.classList.contains('open')) { p.classList.remove('open'); }
+  else { renderLevelPanel(); p.classList.add('open'); }
 }
 
 function renderLevelPanel() {
-  const p = loadProgress();
-  const unlockedUpTo = getUnlockedLevel();
-  const list = document.getElementById('level-list');
-  
-  list.innerHTML = LEVELS.map((lv, i) => {
-    const key = 'level_' + i;
-    const data = p[key] || {correct:0, total:0, passed:false};
-    const locked = i > unlockedUpTo;
+  const progress = loadProgress();
+  const unlocked = getUnlockedLevel();
+  document.getElementById('level-list').innerHTML = LEVELS.map(function(lv, i) {
+    const data = progress['level_' + i] || { correct: 0, total: 0, passed: false };
+    const locked = i > unlocked;
     const isActive = i === currentLevel;
-    const pct = data.total > 0 ? Math.round(data.correct/data.total*100) : 0;
-    
-    let badgeText = locked ? '🔒 잠금' : data.passed ? '✅ 통과' : isActive ? '진행중' : '도전';
-    let badgeClass = locked ? 'locked-badge' : data.passed ? '' : isActive ? 'active-badge' : '';
-
-    return `<div class="level-card ${locked?'locked':''} ${isActive?'active-level':''}" onclick="${locked?'':'selectLevel('+i+')'}">
-      <div class="level-card-top">
-        <div class="level-name">${lv.name} <span style="font-size:13px;color:#aaa;font-weight:400">(${lv.words.length}단어)</span></div>
-        <div class="level-badge ${badgeClass}">${badgeText}</div>
-      </div>
-      <div class="level-progress-wrap">
-        <div class="level-progress-bar" style="width:${data.passed?100:pct}%"></div>
-      </div>
-      <div class="level-meta">${data.passed ? '정답률 ' + pct + '%로 통과!' : data.total > 0 ? '정답률 ' + pct + '% (' + data.correct + '/' + data.total + ')' : '아직 시작 전'}</div>
-    </div>`;
+    const pct = data.total > 0 ? Math.round(data.correct / data.total * 100) : 0;
+    const badgeText  = locked ? '🔒 잠금' : data.passed ? '✅ 통과' : isActive ? '진행중' : '도전';
+    const badgeClass = locked ? 'locked-b' : data.passed ? '' : isActive ? 'active-b' : 'todo-b';
+    const meta = data.passed
+      ? '정답률 ' + pct + '%로 통과!'
+      : data.total > 0 ? '정답률 ' + pct + '% (' + data.correct + '/' + data.total + ')' : '아직 시작 전';
+    return '<div class="level-card ' + (locked ? 'locked' : '') + ' ' + (isActive ? 'active-level' : '') + '" onclick="' + (locked ? '' : 'selectLevel(' + i + ')') + '">'
+      + '<div class="level-card-top">'
+      + '<div class="level-name">' + lv.name + ' <span style="font-size:12px;color:#aaa;font-weight:400">(' + lv.words.length + '단어)</span></div>'
+      + '<div class="lv-badge ' + badgeClass + '">' + badgeText + '</div>'
+      + '</div>'
+      + '<div class="lv-prog-wrap"><div class="lv-prog-bar" style="width:' + (data.passed ? 100 : pct) + '%"></div></div>'
+      + '<div class="lv-meta">' + meta + '</div>'
+      + '</div>';
   }).join('');
 }
 
@@ -176,78 +838,71 @@ function checkLevelPass() {
       p[key].correct = levelCorrect;
       p[key].total = levelTotal;
       saveProgress(p);
-
-      if (currentLevel < LEVELS.length - 1) {
-        setTimeout(() => {
-          if (confirm(`🎉 Level ${currentLevel+1} 통과!\n정답률 ${Math.round(rate*100)}%\n\nLevel ${currentLevel+2}가 열렸어요! 이동할까요?`)) {
-            selectLevel(currentLevel + 1);
+      const nextIdx = currentLevel + 1;
+      if (nextIdx < LEVELS.length) {
+        setTimeout(function() {
+          if (confirm('🎉 Level ' + (currentLevel + 1) + ' 통과!\n정답률 ' + Math.round(rate * 100) + '%\n\nLevel ' + (nextIdx + 1) + '가 열렸어요! 이동할까요?')) {
+            selectLevel(nextIdx);
           }
         }, 500);
       } else {
-        setTimeout(() => alert('🏆 모든 레벨 완료! 정말 대단해요!'), 500);
+        setTimeout(function() { alert('🏆 모든 레벨 완료! 정말 대단해요!'); }, 500);
       }
     }
   }
 }
 
+/* 통계 */
 function toggleStats() {
-  const panel = document.getElementById('stats-panel');
-  panel.classList.toggle('open');
-  if (panel.classList.contains('open')) renderStats();
+  const p = document.getElementById('stats-panel');
+  if (p.classList.contains('open')) { p.classList.remove('open'); }
+  else { renderStats(); p.classList.add('open'); }
 }
 
 function renderStats() {
   const stats = loadStats();
   const today = getToday();
-  const todayData = stats[today] || {correct:0, total:0};
-
+  const todayData = stats[today] || { correct: 0, total: 0 };
   document.getElementById('today-correct').textContent = todayData.correct;
-  document.getElementById('today-total').textContent = todayData.total;
+  document.getElementById('today-total').textContent   = todayData.total;
 
-  const list = document.getElementById('stats-list');
-  const days = Object.keys(stats).sort((a,b)=>b.localeCompare(a));
-
-  if (days.length === 0) {
-    list.innerHTML = '<div style="text-align:center;color:#aaa;font-size:14px;padding:20px">아직 기록이 없어요</div>';
-    return;
-  }
-
-  list.innerHTML = days.map(day => {
-    const d = stats[day];
-    const pct = d.total > 0 ? Math.round(d.correct/d.total*100) : 0;
-    const dateLabel = day === today ? '오늘' : day.slice(5).replace('-', '/');
-    return `<div class="stats-row">
-      <div class="stats-date">${dateLabel}</div>
-      <div class="stats-right">
-        <div class="stats-bar-wrap"><div class="stats-bar" style="width:${pct}%"></div></div>
-        <div class="stats-correct">${d.correct}정답</div>
-        <div class="stats-total">${d.total}문제</div>
-      </div>
-    </div>`;
-  }).join('');
+  const days = Object.keys(stats).sort(function(a, b) { return b.localeCompare(a); });
+  document.getElementById('stats-list').innerHTML = days.length === 0
+    ? '<div style="text-align:center;color:#aaa;font-size:14px;padding:20px">아직 기록이 없어요</div>'
+    : days.map(function(day) {
+        const d = stats[day];
+        const pct = d.total > 0 ? Math.round(d.correct / d.total * 100) : 0;
+        const label = day === today ? '오늘' : day.slice(5).replace('-', '/');
+        return '<div class="stats-row">'
+          + '<div class="stats-date">' + label + '</div>'
+          + '<div class="stats-right">'
+          + '<div class="stats-bar-wrap"><div class="stats-bar-fill" style="width:' + pct + '%"></div></div>'
+          + '<div class="stats-correct">' + d.correct + '정답</div>'
+          + '<div class="stats-total">' + d.total + '문제</div>'
+          + '</div></div>';
+      }).join('');
 }
 
+/* 게임 */
 function setMode(m, el) {
   mode = m;
-  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.mode-tab').forEach(function(t) { t.classList.remove('active'); });
   el.classList.add('active');
   updateInstruction();
   loadQuestion();
 }
 
 function updateInstruction() {
-  const map = {
+  var map = {
     hira2meaning: '히라가나의 뜻을 고르세요',
     meaning2hira: '뜻에 맞는 히라가나를 고르세요',
-    kanji2hira: '한자의 읽기(히라가나)를 고르세요'
+    kanji2hira:   '한자의 읽기(히라가나)를 고르세요'
   };
   document.getElementById('instruction').textContent = map[mode];
 }
 
 function getRandom(exclude, n) {
-  return WORDS.filter(w => w !== exclude)
-              .sort(() => Math.random() - 0.5)
-              .slice(0, n);
+  return WORDS.filter(function(w) { return w !== exclude; }).sort(function() { return Math.random() - 0.5; }).slice(0, n);
 }
 
 function loadQuestion() {
@@ -260,24 +915,21 @@ function loadQuestion() {
   document.getElementById('speak-btn').className = '';
 
   if (usedWords.length >= WORDS.length) usedWords = [];
-
-  const pool = WORDS.filter(w => !usedWords.includes(w));
+  var pool = WORDS.filter(function(w) { return !usedWords.includes(w); });
   currentWord = pool[Math.floor(Math.random() * pool.length)];
   usedWords.push(currentWord);
   totalShown++;
-
   updateProgress();
-  currentChoices = [...getRandom(currentWord, 3), currentWord].sort(() => Math.random() - 0.5);
 
+  currentChoices = getRandom(currentWord, 4).concat([currentWord]).sort(function() { return Math.random() - 0.5; });
   renderCard();
   renderChoices();
 }
 
 function renderCard() {
-  const mainEl = document.getElementById('word-main');
-  const catEl = document.getElementById('card-category');
-  const romajiEl = document.getElementById('word-romaji');
-
+  var mainEl   = document.getElementById('word-main');
+  var catEl    = document.getElementById('card-category');
+  var romajiEl = document.getElementById('word-romaji');
   mainEl.style.fontFamily = "'Noto Sans JP', sans-serif";
   romajiEl.style.display = 'none';
 
@@ -298,15 +950,14 @@ function renderCard() {
 }
 
 function renderChoices() {
-  const c = document.getElementById('choices');
+  var c = document.getElementById('choices');
   c.innerHTML = '';
-
-  currentChoices.forEach(word => {
-    const btn = document.createElement('button');
+  currentChoices.forEach(function(word) {
+    var btn = document.createElement('button');
     btn.className = 'choice-btn';
-    btn.textContent = (mode === 'hira2meaning') ? word.meaning : word.reading;
-    if (mode === 'hira2meaning') btn.style.fontFamily = "'Noto Sans KR',sans-serif";
-    btn.onclick = () => handleAnswer(word, btn);
+    btn.textContent = mode === 'hira2meaning' ? word.meaning : word.reading;
+    if (mode === 'hira2meaning') btn.style.fontFamily = "'Noto Sans KR', sans-serif";
+    btn.onclick = function() { handleAnswer(word, btn); };
     c.appendChild(btn);
   });
 }
@@ -314,17 +965,14 @@ function renderChoices() {
 function handleAnswer(chosen, btn) {
   if (answered) return;
   answered = true;
+  var isCorrect = chosen === currentWord;
+  var card = document.getElementById('main-card');
+  var rb   = document.getElementById('result-bar');
 
-  const isCorrect = chosen === currentWord;
-  const card = document.getElementById('main-card');
-  const rb = document.getElementById('result-bar');
-
-  document.querySelectorAll('.choice-btn').forEach(b => {
+  document.querySelectorAll('.choice-btn').forEach(function(b) {
     b.disabled = true;
-    const txt = b.textContent;
-    const bWord = currentChoices.find(w => 
-      mode==='hira2meaning' ? w.meaning===txt : w.reading===txt
-    );
+    var txt   = b.textContent;
+    var bWord = currentChoices.find(function(w) { return mode === 'hira2meaning' ? w.meaning === txt : w.reading === txt; });
     if (bWord === currentWord) b.classList.add('correct-ans');
     else if (bWord === chosen && !isCorrect) b.classList.add('wrong-ans');
   });
@@ -333,75 +981,65 @@ function handleAnswer(chosen, btn) {
     combo++; streakCount++; correctCount++;
     levelCorrect++; levelTotal++;
     recordAnswer(true);
-    checkLevelPass();
-
     card.classList.add('correct');
     rb.className = 'show correct-bar';
-    document.getElementById('result-label').textContent = combo >= 5 ? `콤보 x${combo}! 완벽해요!` : '완벽해요!';
-    document.getElementById('result-meaning').textContent = `${currentWord.reading}（${currentWord.kanji}） = ${currentWord.meaning}`;
-    
-    const sb = document.getElementById('speak-btn');
-    sb.className = 'visible';
-    sb.textContent = '🔊 다시 듣기';
+    document.getElementById('result-label').textContent = combo >= 5 ? '콤보 x' + combo + '! 완벽해요!' : '완벽해요!';
+    document.getElementById('result-meaning').textContent = currentWord.reading + '（' + currentWord.kanji + '） = ' + currentWord.meaning;
+    speakWord();
+    var sb = document.getElementById('speak-btn');
+    sb.className = 'visible'; sb.textContent = '🔊 다시 듣기';
+    checkLevelPass();
   } else {
     combo = 0; streakCount = 0; wrongCount++;
     levelTotal++;
     recordAnswer(false);
-
     card.classList.add('wrong');
     rb.className = 'show wrong-bar';
     document.getElementById('result-label').textContent = '틀렸어요';
-    document.getElementById('result-meaning').textContent = `정답: ${currentWord.reading}（${currentWord.kanji}） = ${currentWord.meaning}`;
-    
-    const sb = document.getElementById('speak-btn');
-    sb.className = 'visible wrong-speak';
-    sb.textContent = '🔊 정답 듣기';
+    document.getElementById('result-meaning').textContent = '정답: ' + currentWord.reading + '（' + currentWord.kanji + '） = ' + currentWord.meaning;
+    speakWord();
+    var sb2 = document.getElementById('speak-btn');
+    sb2.className = 'visible wrong-speak'; sb2.textContent = '🔊 정답 듣기';
   }
 
   if (mode === 'kanji2hira') {
-    document.getElementById('word-sub').textContent = currentWord.reading;
-    document.getElementById('word-sub').style.display = 'block';
+    var sub = document.getElementById('word-sub');
+    sub.textContent = currentWord.reading;
+    sub.style.display = 'block';
   }
-
-  document.getElementById('word-romaji').textContent = currentWord.romaji;
-  document.getElementById('word-romaji').style.display = 'block';
+  var romajiEl = document.getElementById('word-romaji');
+  romajiEl.textContent = currentWord.romaji;
+  romajiEl.style.display = 'block';
 
   rb.style.display = 'flex';
   updateCombo();
   updateScore();
-
-  speakWord();
 }
 
 function nextQuestion() {
-  const card = document.getElementById('main-card');
+  var card = document.getElementById('main-card');
   card.classList.add('fly-left');
-  setTimeout(() => {
-    card.classList.remove('fly-left');
-    loadQuestion();
-  }, 350);
+  setTimeout(function() { card.classList.remove('fly-left'); loadQuestion(); }, 350);
 }
 
 function updateProgress() {
-  const progress = Math.min((totalShown % 20) / 20 * 100, 100);
-  document.getElementById('progress-bar').style.width = progress + '%';
+  document.getElementById('progress-bar').style.width = Math.min((totalShown % 20) / 20 * 100, 100) + '%';
 }
-
 function updateCombo() {
   document.getElementById('combo-num').textContent = combo;
   document.getElementById('combo-badge').style.display = combo >= 3 ? 'block' : 'none';
 }
-
 function updateScore() {
   document.getElementById('correct-count').textContent = correctCount;
-  document.getElementById('wrong-count').textContent = wrongCount;
-  document.getElementById('streak-count').textContent = streakCount;
+  document.getElementById('wrong-count').textContent   = wrongCount;
+  document.getElementById('streak-count').textContent  = streakCount;
 }
 
-// 초기화
+/* 초기화 */
 currentLevel = getUnlockedLevel();
 WORDS = LEVELS[currentLevel].words;
-document.getElementById("level-label").textContent = "Lv." + (currentLevel + 1);
-updateInstruction();
+document.getElementById('level-label').textContent = 'Lv.' + (currentLevel + 1);
 loadQuestion();
 </script>
+</body>
+</html>
