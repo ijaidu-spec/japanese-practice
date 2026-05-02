@@ -307,7 +307,7 @@
     <div id="mode-tabs">
       <button class="mode-tab active" onclick="setMode('hira2meaning',this)">히라가나→뜻</button>
       <button class="mode-tab" onclick="setMode('meaning2hira',this)">뜻→히라가나</button>
-      <button class="mode-tab" onclick="setMode('kanji2hira',this)">한자→히라가나</button>
+      <button class="mode-tab" id="wrong-tab" onclick="setMode('wrong',this)">❌ 오답연습</button>
     </div>
     <div id="instruction">히라가나의 뜻을 고르세요</div>
     <div id="card-area">
@@ -878,8 +878,13 @@ function startWrongPractice() {
   if (keys.length === 0) return;
   wrongPracticeWords = keys.map(function(k) { return w[k]; });
   isWrongPractice = true;
+  mode = 'wrong';
   document.getElementById('wrong-panel').classList.remove('open');
   document.getElementById('wrong-mode-banner').classList.add('show');
+  /* 오답연습 탭 활성화 */
+  document.querySelectorAll('.mode-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.getElementById('wrong-tab').classList.add('active');
+  document.getElementById('instruction').textContent = '틀린 단어를 다시 풀어보세요';
   WORDS = wrongPracticeWords;
   usedWords = []; totalShown = 0;
   correctCount = 0; wrongCount = 0; streakCount = 0; combo = 0;
@@ -887,14 +892,51 @@ function startWrongPractice() {
   loadQuestion();
 }
 
-function exitWrongPractice() {
+function exitWrongPractice(resetMode) {
   isWrongPractice = false;
+  mode = 'hira2meaning';
   document.getElementById('wrong-mode-banner').classList.remove('show');
   WORDS = LEVELS[currentLevel].words;
   usedWords = []; totalShown = 0;
-  correctCount = 0; wrongCount = 0; streakCount = 0; combo = 0;
-  updateCombo(); updateScore();
+  if (resetMode !== false) {
+    correctCount = 0; wrongCount = 0; streakCount = 0; combo = 0;
+    updateCombo(); updateScore();
+  }
+  /* 첫 번째 탭 활성화 */
+  document.querySelectorAll('.mode-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelector('.mode-tab').classList.add('active');
+  document.getElementById('instruction').textContent = '히라가나의 뜻을 고르세요';
   loadQuestion();
+}
+
+function checkWrongMaster() {
+  if (!isWrongPractice) return;
+  var w = loadWrongNote();
+  if (Object.keys(w).length === 0) {
+    /* 팝업 표시 */
+    setTimeout(function() {
+      showMasterPopup();
+    }, 400);
+  }
+}
+
+function showMasterPopup() {
+  var overlay = document.createElement('div');
+  overlay.id = 'master-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;">'
+    + '<div style="font-size:48px;margin-bottom:12px;">🏆</div>'
+    + '<div style="font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:8px;">오답 마스터!</div>'
+    + '<div style="font-size:14px;color:#888;margin-bottom:24px;line-height:1.6;">틀린 단어를 모두 맞췄어요!<br>정말 대단해요 👏</div>'
+    + '<button onclick="closeMasterPopup()" style="width:100%;padding:14px;background:#22c55e;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:500;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;">메인으로 돌아가기</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+}
+
+function closeMasterPopup() {
+  var el = document.getElementById('master-overlay');
+  if (el) el.remove();
+  exitWrongPractice(true);
 }
 
 function speakText(txt) { speakWord(txt); }
@@ -1038,9 +1080,29 @@ function renderStats() {
 
 /* 게임 */
 function setMode(m, el) {
-  mode = m;
   document.querySelectorAll('.mode-tab').forEach(function(t) { t.classList.remove('active'); });
   el.classList.add('active');
+
+  if (m === 'wrong') {
+    var w = loadWrongNote();
+    var keys = Object.keys(w);
+    if (keys.length === 0) {
+      alert('아직 틀린 단어가 없어요! 🎉\n열심히 풀다 보면 오답이 생겨요.');
+      /* 탭을 다시 이전으로 되돌리기 */
+      document.querySelectorAll('.mode-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelector('.mode-tab').classList.add('active');
+      return;
+    }
+    mode = 'wrong';
+    isWrongPractice = true;
+    wrongPracticeWords = keys.map(function(k) { return w[k]; });
+    WORDS = wrongPracticeWords;
+    document.getElementById('wrong-mode-banner').classList.add('show');
+  } else {
+    if (isWrongPractice) exitWrongPractice(false);
+    mode = m;
+  }
+  usedWords = []; totalShown = 0;
   updateInstruction();
   loadQuestion();
 }
@@ -1049,9 +1111,9 @@ function updateInstruction() {
   var map = {
     hira2meaning: '히라가나의 뜻을 고르세요',
     meaning2hira: '뜻에 맞는 히라가나를 고르세요',
-    kanji2hira:   '한자의 읽기(히라가나)를 고르세요'
+    wrong:        '틀린 단어를 다시 풀어보세요'
   };
-  document.getElementById('instruction').textContent = map[mode];
+  document.getElementById('instruction').textContent = map[mode] || '';
 }
 
 function getRandom(exclude, n) {
@@ -1086,19 +1148,15 @@ function renderCard() {
   mainEl.style.fontFamily = "'Noto Sans JP', sans-serif";
   romajiEl.style.display = 'none';
 
-  if (mode === 'hira2meaning') {
+  if (mode === 'hira2meaning' || mode === 'wrong') {
     mainEl.textContent = currentWord.reading;
     mainEl.style.fontSize = currentWord.reading.length > 5 ? '34px' : '46px';
     catEl.textContent = currentWord.category;
-  } else if (mode === 'meaning2hira') {
+  } else {
     mainEl.textContent = currentWord.meaning;
     mainEl.style.fontSize = '34px';
     mainEl.style.fontFamily = "'Noto Sans KR', sans-serif";
     catEl.textContent = '→ 히라가나';
-  } else {
-    mainEl.textContent = currentWord.kanji;
-    mainEl.style.fontSize = currentWord.kanji.length > 2 ? '36px' : '52px';
-    catEl.textContent = currentWord.category;
   }
 }
 
@@ -1138,6 +1196,7 @@ function handleAnswer(chosen, btn) {
     var wn = loadWrongNote();
     var wkey = currentWord.kanji + '_' + currentWord.reading;
     if (wn[wkey]) { delete wn[wkey]; saveWrongNote(wn); }
+    checkWrongMaster();
     card.classList.add('correct');
     rb.className = 'show correct-bar';
     document.getElementById('result-label').textContent = combo >= 5 ? '콤보 x' + combo + '! 완벽해요!' : '완벽해요!';
@@ -1160,11 +1219,6 @@ function handleAnswer(chosen, btn) {
     sb2.className = 'visible wrong-speak'; sb2.textContent = '🔊 정답 듣기';
   }
 
-  if (mode === 'kanji2hira') {
-    var sub = document.getElementById('word-sub');
-    sub.textContent = currentWord.reading;
-    sub.style.display = 'block';
-  }
   var romajiEl = document.getElementById('word-romaji');
   romajiEl.textContent = currentWord.romaji;
   romajiEl.style.display = 'block';
