@@ -169,13 +169,10 @@
 
   /* result bar */
   #result-bar {
-    width: 100%;
-    padding: 16px;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    display: none; flex-direction: column; gap: 10px;
-    border-top: 2px solid transparent;
-    border-radius: 16px;
-    margin-top: 4px;
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    display: none; flex-direction: column; gap: 10px; z-index: 10;
   }
   #result-bar.show { display: flex; }
   #result-bar.correct-bar { background: #f0fdf4; border-top: 2px solid #4ade80; }
@@ -325,15 +322,16 @@
       </div>
     </div>
     <div id="choices"></div>
-    <!-- 결과 바 (스크롤 영역 안) -->
-    <div id="result-bar">
-      <div>
-        <div id="result-label">완벽해요!</div>
-        <div id="result-meaning"></div>
-      </div>
-      <button id="continue-btn" onclick="nextQuestion()">계속하기</button>
-    </div>
   </div>
+</div>
+
+<!-- 결과 바 -->
+<div id="result-bar">
+  <div>
+    <div id="result-label">완벽해요!</div>
+    <div id="result-meaning"></div>
+  </div>
+  <button id="continue-btn" onclick="nextQuestion()">계속하기</button>
 </div>
 
 <script>
@@ -1238,10 +1236,6 @@ function handleAnswer(chosen, btn) {
   romajiEl.style.display = 'block';
 
   rb.style.display = 'flex';
-  /* 결과 바로 부드럽게 스크롤 */
-  setTimeout(function() {
-    rb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, 50);
   updateCombo();
   updateScore();
 }
@@ -1249,7 +1243,6 @@ function handleAnswer(chosen, btn) {
 function nextQuestion() {
   var card = document.getElementById('main-card');
   card.classList.add('fly-left');
-  document.getElementById('scroll-area').scrollTo({ top: 0, behavior: 'smooth' });
   setTimeout(function() { card.classList.remove('fly-left'); loadQuestion(); }, 350);
 }
 
