@@ -309,28 +309,40 @@ const WORDS = [
 let currentWord, currentChoices, answered=false;
 let combo=0, correctCount=0, wrongCount=0, streakCount=0;
 let mode='hira2meaning', usedWords=[], totalShown=0;
-const GOOGLE_TTS_KEY = 'AIzaSyBTPreXf1Vdpnv0-0s1fPgBm5tXKsmfgfQ';
+const AZURE_TTS_KEY = '44B7wf3526FHz7bL5gEw2A05B4PJG8tHMGcrA3TClJUppSYrqEQYJQQJ99CEACNns7RXJ3w3AAAYACOGS3KU';
+const AZURE_REGION = 'koreacentral';
 
 async function speakWord(text) {
   const txt = text || currentWord.reading;
   try {
-    const res = await fetch(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_KEY}`,
+    const tokenRes = await fetch(
+      `https://${AZURE_REGION}.api.cognitive.microsoft.com/sts/v1.0/issueToken`,
+      {method: 'POST', headers: {'Ocp-Apim-Subscription-Key': AZURE_TTS_KEY}}
+    );
+    const token = await tokenRes.text();
+
+    const ssml = `<speak version='1.0' xml:lang='ja-JP'>
+      <voice name='ja-JP-NanamiNeural'>
+        <prosody rate='-10%'>${txt}</prosody>
+      </voice>
+    </speak>`;
+
+    const audioRes = await fetch(
+      `https://${AZURE_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`,
       {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          input: {text: txt},
-          voice: {languageCode: 'ja-JP', name: 'ja-JP-Neural2-B'},
-          audioConfig: {audioEncoding: 'MP3', speakingRate: 0.9, pitch: 0}
-        })
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/ssml+xml',
+          'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3'
+        },
+        body: ssml
       }
     );
-    const data = await res.json();
-    if (data.audioContent) {
-      const audio = new Audio('data:audio/mp3;base64,' + data.audioContent);
-      audio.play();
-    }
+    const blob = await audioRes.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.play();
   } catch(e) {
     console.error('TTS error:', e);
   }
