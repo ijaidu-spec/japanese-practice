@@ -1163,11 +1163,12 @@ function renderCard() {
 function renderChoices() {
   var c = document.getElementById('choices');
   c.innerHTML = '';
+  var showMeaning = (mode === 'hira2meaning' || mode === 'wrong');
   currentChoices.forEach(function(word) {
     var btn = document.createElement('button');
     btn.className = 'choice-btn';
-    btn.textContent = mode === 'hira2meaning' ? word.meaning : word.reading;
-    if (mode === 'hira2meaning') btn.style.fontFamily = "'Noto Sans KR', sans-serif";
+    btn.textContent = showMeaning ? word.meaning : word.reading;
+    if (showMeaning) btn.style.fontFamily = "'Noto Sans KR', sans-serif";
     btn.onclick = function() { handleAnswer(word, btn); };
     c.appendChild(btn);
   });
@@ -1183,7 +1184,8 @@ function handleAnswer(chosen, btn) {
   document.querySelectorAll('.choice-btn').forEach(function(b) {
     b.disabled = true;
     var txt   = b.textContent;
-    var bWord = currentChoices.find(function(w) { return mode === 'hira2meaning' ? w.meaning === txt : w.reading === txt; });
+    var showMeaning = (mode === 'hira2meaning' || mode === 'wrong');
+    var bWord = currentChoices.find(function(w) { return showMeaning ? w.meaning === txt : w.reading === txt; });
     if (bWord === currentWord) b.classList.add('correct-ans');
     else if (bWord === chosen && !isCorrect) b.classList.add('wrong-ans');
   });
