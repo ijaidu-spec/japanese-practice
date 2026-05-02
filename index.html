@@ -1035,16 +1035,52 @@ function checkLevelPass() {
       saveProgress(p);
       const nextIdx = currentLevel + 1;
       if (nextIdx < LEVELS.length) {
-        setTimeout(function() {
-          if (confirm('🎉 Level ' + (currentLevel + 1) + ' 통과!\n정답률 ' + Math.round(rate * 100) + '%\n\nLevel ' + (nextIdx + 1) + '가 열렸어요! 이동할까요?')) {
-            selectLevel(nextIdx);
-          }
-        }, 500);
+        setTimeout(function() { showLevelPassPopup(nextIdx, Math.round(rate * 100)); }, 500);
       } else {
-        setTimeout(function() { alert('🏆 모든 레벨 완료! 정말 대단해요!'); }, 500);
+        setTimeout(function() { showAllClearPopup(); }, 500);
       }
     }
   }
+}
+
+function showLevelPassPopup(nextIdx, pct) {
+  var overlay = document.createElement('div');
+  overlay.id = 'level-pass-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;">'
+    + '<div style="font-size:48px;margin-bottom:12px;">🎉</div>'
+    + '<div style="font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:8px;">Level ' + currentLevel + ' 통과!</div>'
+    + '<div style="font-size:14px;color:#888;margin-bottom:6px;">정답률 ' + pct + '%</div>'
+    + '<div style="font-size:14px;color:#555;margin-bottom:24px;line-height:1.6;">Level ' + (nextIdx + 1) + '가 열렸어요!<br>바로 이동할까요?</div>'
+    + '<div style="display:flex;gap:10px;">'
+    + '<button onclick="closeLevelPassPopup()" style="flex:1;padding:13px;background:#f0ede6;color:#555;border:none;border-radius:14px;font-size:15px;font-weight:500;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;">계속 연습</button>'
+    + '<button onclick="goNextLevel(' + nextIdx + ')" style="flex:1;padding:13px;background:#22c55e;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:500;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;">다음 레벨 →</button>'
+    + '</div>'
+    + '</div>';
+  document.body.appendChild(overlay);
+}
+
+function goNextLevel(nextIdx) {
+  closeLevelPassPopup();
+  selectLevel(nextIdx);
+}
+
+function closeLevelPassPopup() {
+  var el = document.getElementById('level-pass-overlay');
+  if (el) el.remove();
+}
+
+function showAllClearPopup() {
+  var overlay = document.createElement('div');
+  overlay.id = 'level-pass-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;">'
+    + '<div style="font-size:48px;margin-bottom:12px;">🏆</div>'
+    + '<div style="font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:8px;">모든 레벨 완료!</div>'
+    + '<div style="font-size:14px;color:#888;margin-bottom:24px;line-height:1.6;">400개 단어를 모두 마스터했어요!<br>정말 대단해요 👏</div>'
+    + '<button onclick="closeLevelPassPopup()" style="width:100%;padding:14px;background:#f59e0b;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:500;cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;">처음부터 복습하기</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
 }
 
 /* 통계 */
@@ -1122,12 +1158,15 @@ function getAllWords() {
   return all;
 }
 
+function wordKey(w) { return w.kanji + '_' + w.reading; }
+
 function getRandom(exclude, n) {
-  /* 오답연습 모드엔 전체 단어 풀에서 오답 보기 채우기 */
   var pool = isWrongPractice ? getAllWords() : WORDS;
-  return pool.filter(function(w) { return w !== exclude && w.meaning !== exclude.meaning; })
-             .sort(function() { return Math.random() - 0.5; })
-             .slice(0, n);
+  var excludeKey = wordKey(exclude);
+  return pool
+    .filter(function(w) { return wordKey(w) !== excludeKey && w.meaning !== exclude.meaning; })
+    .sort(function() { return Math.random() - 0.5; })
+    .slice(0, n);
 }
 
 function loadQuestion() {
@@ -1139,8 +1178,23 @@ function loadQuestion() {
   document.getElementById('word-romaji').style.display = 'none';
   document.getElementById('speak-btn').className = '';
 
-  if (usedWords.length >= WORDS.length) usedWords = [];
-  var pool = WORDS.filter(function(w) { return !usedWords.includes(w); });
+  /* 현재 레벨이 통과된 상태에서 단어를 한 바퀴 다 돌면 자동으로 다음 레벨 팝업 */
+  var usedKeys = usedWords.map(wordKey);
+  if (usedKeys.length >= WORDS.length && !isWrongPractice) {
+    var p = loadProgress();
+    var key = 'level_' + currentLevel;
+    var nextIdx = currentLevel + 1;
+    if (p[key] && p[key].passed && nextIdx < LEVELS.length) {
+      var el = document.getElementById('level-pass-overlay');
+      if (!el) {
+        setTimeout(function() { showLevelPassPopup(nextIdx, Math.round(p[key].correct / p[key].total * 100)); }, 300);
+      }
+    }
+    usedWords = [];
+  }
+  var usedKeys = usedWords.map(wordKey);
+  var pool = WORDS.filter(function(w) { return !usedKeys.includes(wordKey(w)); });
+  if (pool.length === 0) { usedWords = []; pool = WORDS.slice(); }
   currentWord = pool[Math.floor(Math.random() * pool.length)];
   usedWords.push(currentWord);
   totalShown++;
@@ -1187,7 +1241,7 @@ function renderChoices() {
 function handleAnswer(chosen, btn) {
   if (answered) return;
   answered = true;
-  var isCorrect = chosen === currentWord;
+  var isCorrect = wordKey(chosen) === wordKey(currentWord);
   var card = document.getElementById('main-card');
   var rb   = document.getElementById('result-bar');
 
@@ -1196,8 +1250,8 @@ function handleAnswer(chosen, btn) {
     var txt   = b.textContent;
     var showMeaning = (mode === 'hira2meaning' || mode === 'wrong');
     var bWord = currentChoices.find(function(w) { return showMeaning ? w.meaning === txt : w.reading === txt; });
-    if (bWord === currentWord) b.classList.add('correct-ans');
-    else if (bWord === chosen && !isCorrect) b.classList.add('wrong-ans');
+    if (bWord && wordKey(bWord) === wordKey(currentWord)) b.classList.add('correct-ans');
+    else if (bWord && wordKey(bWord) === wordKey(chosen) && !isCorrect) b.classList.add('wrong-ans');
   });
 
   if (isCorrect) {
