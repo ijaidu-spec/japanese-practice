@@ -183,7 +183,7 @@
   var canSpeak='Audio' in window,speechRun=0,audioPlayer=null;
   function allData(level){return level==='all'?rows.basic.concat(rows.voiced,rows.yoon):rows[level]||rows.basic}
   function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
-  function itemFrom(row,script){var chosen=script==='mixed'?(Math.random()<.5?'hiragana':'katakana'):script;return {hira:row[0],kata:row[1],romaji:row[2],script:chosen,kana:chosen==='hiragana'?row[0]:row[1],audio:'assets/audio/'+row[3]}}
+  function itemFrom(row,script){var chosen=script==='mixed'?(Math.random()<.5?'hiragana':'katakana'):script;return {hira:row[0],kata:row[1],romaji:row[2],script:chosen,kana:chosen==='hiragana'?row[0]:row[1],audio:'assets/audio/'+row[3]+'?v=2'}}
   function stopAudio(){speechRun++;if(audioPlayer){audioPlayer.pause();try{audioPlayer.currentTime=0}catch(e){}audioPlayer=null}}
   function navigate(name){if(name!=='quiz'&&canSpeak)stopAudio();document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});var target=document.getElementById('view-'+name);if(target)target.classList.add('active');document.querySelectorAll('.nav-btn[data-nav]').forEach(function(b){b.classList.toggle('active',b.dataset.nav===name)});if(name==='errors')renderErrors();window.scrollTo(0,0)}
   document.querySelectorAll('[data-nav]').forEach(function(b){b.addEventListener('click',function(){navigate(b.dataset.nav)})});
